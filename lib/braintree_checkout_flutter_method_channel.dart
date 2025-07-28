@@ -1,24 +1,23 @@
 import 'dart:convert';
 
+import 'package:braintree_checkout_flutter/braintree_checkout_flutter_platform_interface.dart';
+import 'package:braintree_checkout_flutter/braintree_constants.dart';
+import 'package:braintree_checkout_flutter/paypal/paypal_account_nonce.dart';
+import 'package:braintree_checkout_flutter/paypal/paypal_request.dart';
+import 'package:braintree_checkout_flutter/venmo/venmo_account_nonce.dart';
+import 'package:braintree_checkout_flutter/venmo/venmo_request.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import 'paypal/paypal_request.dart';
-import 'braintree_constants.dart';
-import 'braintree_checkout_flutter_platform_interface.dart';
-import 'paypal/paypal_account_nonce.dart';
-import 'venmo/venmo_account_nonce.dart';
-import 'venmo/venmo_request.dart';
-
 class MethodChannelBraintreeCheckoutFlutter extends BraintreeCheckoutFlutterPlatform {
   @visibleForTesting
-  final methodChannel = const MethodChannel('braintree_payment');
+  final methodChannel = const MethodChannel('braintree_checkout_flutter');
 
   @override
   Future<VenmoAccountNonce?> venmoPayment(VenmoRequest request) async {
-    final String? res = await methodChannel.invokeMethod<String>(BraintreeConstants.venmoPaymentMethodKey, request.toJson());
-    if (res != null) {
-      final json = jsonDecode(res);
+    final responseChannel = await methodChannel.invokeMethod<String>(BraintreeConstants.venmoPaymentMethodKey, request.toJson());
+    if (responseChannel != null) {
+      final json = jsonDecode(responseChannel);
       return VenmoAccountNonce.fromJson(json);
     } else {
       return null;
@@ -27,9 +26,9 @@ class MethodChannelBraintreeCheckoutFlutter extends BraintreeCheckoutFlutterPlat
 
   @override
   Future<PayPalAccountNonce?> paypalPayment(PayPalRequest request) async {
-    final String? res = await methodChannel.invokeMethod<String>(BraintreeConstants.paypalPaymentMethodKey, request.toJson());
-    if (res != null) {
-      final json = jsonDecode(res);
+    final responseChannel = await methodChannel.invokeMethod<String>(BraintreeConstants.paypalPaymentMethodKey, request.toJson());
+    if (responseChannel != null) {
+      final json = jsonDecode(responseChannel);
       return PayPalAccountNonce.fromJson(json);
     } else {
       return null;
@@ -37,8 +36,8 @@ class MethodChannelBraintreeCheckoutFlutter extends BraintreeCheckoutFlutterPlat
   }
 
   @override
-  Future<String?> getData(String token) async {
-    final String? res = await methodChannel.invokeMethod<String>(BraintreeConstants.getDataMethodKey, {'token': token});
-    return res;
-  }
+  Future<String?> getData(String token) => methodChannel.invokeMethod<String>(BraintreeConstants.getDataMethodKey, {'token': token});
+
+  @override
+  Future<bool?> isVenmoAppInstalled() => methodChannel.invokeMethod<bool?>(BraintreeConstants.isVenmoAppInstalledMethodKey);
 }

@@ -25,7 +25,7 @@ apply plugin: "com.android.library"
 apply plugin: "kotlin-android"
 
 android {
-    namespace = "com.papajohns.pj_fast_payment"
+    namespace = "io.navalia.braintree_checkout_flutter"
 
     compileSdk = 35
 

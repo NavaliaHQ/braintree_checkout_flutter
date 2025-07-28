@@ -4,6 +4,7 @@ object Constants {
     const val VENMO_PAYMENT_METHOD_KEY = "venmoPayment"
     const val PAYPAL_PAYMENT_METHOD_KEY = "paypalPayment"
     const val GET_DATA = "getData"
+    const val IS_VENMO_APP_INSTALLED = "isVenmoAppInstalled"
 
     const val VENMO_REQUEST_CODE = 1001
     const val PAYPAL_REQUEST_CODE = 1002

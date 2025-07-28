@@ -26,7 +26,7 @@ class VenmoActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val intent = getIntent();
+        val intent = intent;
         val token: String = intent.getStringExtra(Constants.TOKEN_KEY) as String
         val displayName: String = intent.getStringExtra(Constants.DISPLAY_NAME_KEY) as String
         val amount: String = intent.getStringExtra(Constants.AMOUNT_KEY) as String
@@ -44,12 +44,11 @@ class VenmoActivity : ComponentActivity() {
         )
 
         val venmoRequest = VenmoRequest(
-            VenmoPaymentMethodUsage.SINGLE_USE,
+            VenmoPaymentMethodUsage.MULTI_USE,
             totalAmount = amount,
             displayName = displayName,
             )
         startVenmoFlow(venmoRequest)
-
     }
 
     private fun startVenmoFlow(venmoRequest: VenmoRequest) {
@@ -160,6 +159,7 @@ class VenmoActivity : ComponentActivity() {
         val nonceJson = JSONObject().apply {
             put("nonce", nonce.string)
             put("isDefault", nonce.isDefault)
+            put("billingAddress", nonce.billingAddress?.let { IntentUtils.postalAddressToJson(it) } ?: JSONObject.NULL)
             put("email", nonce.email ?: JSONObject.NULL)
             put("externalId", nonce.externalId ?: JSONObject.NULL)
             put("firstName", nonce.firstName ?: JSONObject.NULL)
@@ -167,7 +167,6 @@ class VenmoActivity : ComponentActivity() {
             put("phoneNumber", nonce.phoneNumber ?: JSONObject.NULL)
             put("username", nonce.username)
         }
-
         val resultIntent = Intent().apply {
             putExtra(Constants.NONCE_KEY, nonceJson.toString())
         }

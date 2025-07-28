@@ -1,8 +1,8 @@
 package io.navalia.braintree_checkout_flutter
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
-import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -13,14 +13,17 @@ import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import com.braintreepayments.api.datacollector.DataCollector
 import com.braintreepayments.api.datacollector.DataCollectorRequest
 import com.braintreepayments.api.core.BraintreeClient
+import com.braintreepayments.api.core.DeviceInspector
 
 class BraintreeCheckoutFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     private lateinit var channel: MethodChannel
     private var activity: Activity? = null
     private var pendingResult: Result? = null
+    private lateinit var context: Context
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        channel = MethodChannel(binding.binaryMessenger, "braintree_payment")
+        context = binding.applicationContext
+        channel = MethodChannel(binding.binaryMessenger, "braintree_checkout_flutter")
         channel.setMethodCallHandler(this)
     }
 
@@ -47,6 +50,11 @@ class BraintreeCheckoutFlutterPlugin : FlutterPlugin, MethodCallHandler, Activit
             Constants.GET_DATA -> {
                 val arguments = call.arguments as? Map<String, Any> ?: emptyMap()
                 collectDeviceData(arguments, result)
+            }
+
+            Constants.IS_VENMO_APP_INSTALLED -> {
+                val isVenmoAppInstalled = DeviceInspector().isVenmoAppSwitchAvailable(context)
+                result.success(isVenmoAppInstalled)
             }
 
             else -> result.notImplemented()

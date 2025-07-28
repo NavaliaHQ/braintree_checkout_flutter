@@ -1,10 +1,9 @@
+import 'package:braintree_checkout_flutter/braintree_checkout_flutter_method_channel.dart';
+import 'package:braintree_checkout_flutter/paypal/paypal_account_nonce.dart';
+import 'package:braintree_checkout_flutter/paypal/paypal_request.dart';
+import 'package:braintree_checkout_flutter/venmo/venmo_account_nonce.dart';
+import 'package:braintree_checkout_flutter/venmo/venmo_request.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-
-import 'paypal/paypal_account_nonce.dart';
-import 'paypal/paypal_request.dart';
-import 'braintree_checkout_flutter_method_channel.dart';
-import 'venmo/venmo_account_nonce.dart';
-import 'venmo/venmo_request.dart';
 
 abstract class BraintreeCheckoutFlutterPlatform extends PlatformInterface {
   BraintreeCheckoutFlutterPlatform() : super(token: _token);
@@ -23,6 +22,8 @@ abstract class BraintreeCheckoutFlutterPlatform extends PlatformInterface {
   Future<VenmoAccountNonce?> venmoPayment(VenmoRequest request);
 
   Future<PayPalAccountNonce?> paypalPayment(PayPalRequest request);
+
+  Future<bool?> isVenmoAppInstalled();
 
   Future<String?> getData(String token);
 }

@@ -1,39 +1,30 @@
 package io.navalia.braintree_checkout_flutter
 
-import android.app.Activity.RESULT_CANCELED
-import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
-import com.braintreepayments.api.paypal.PayPalCheckoutRequest
 import com.braintreepayments.api.paypal.PayPalClient
 import com.braintreepayments.api.paypal.PayPalLauncher
-import com.braintreepayments.api.paypal.PayPalLineItem
-import com.braintreepayments.api.paypal.PayPalLineItemKind
 import com.braintreepayments.api.paypal.PayPalPaymentAuthRequest
 import com.braintreepayments.api.paypal.PayPalPaymentAuthResult
 import com.braintreepayments.api.paypal.PayPalPendingRequest
 import com.braintreepayments.api.paypal.PayPalResult
 import com.braintreepayments.api.paypal.PayPalVaultRequest
+import com.braintreepayments.api.core.PostalAddress
 import org.json.JSONObject
 
 class PayPalActivity : ComponentActivity() {
     private lateinit var paypalClient: PayPalClient
     private lateinit var paypalLauncher: PayPalLauncher
-
     private var storedPendingRequest: PayPalPendingRequest.Started? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val intent = getIntent();
+        val intent = intent
         
         val token: String = intent.getStringExtra(Constants.TOKEN_KEY) as String
         val displayName: String = intent.getStringExtra(Constants.DISPLAY_NAME_KEY) as String
-        val amount: String = intent.getStringExtra(Constants.AMOUNT_KEY) as String
-        val currencyCode: String = intent.getStringExtra(Constants.CURRENCY_CODE_KEY) as String
-
         val appLinkReturnUrl: String =
             intent.getStringExtra(Constants.ANDROID_APP_LINK_RETURN_URL) as String
         val deepLinkFallbackUrlScheme: String? =
@@ -49,22 +40,17 @@ class PayPalActivity : ComponentActivity() {
             deepLinkFallbackUrlScheme = "$deepLinkFallbackUrlScheme.paypal",
         )
 
-        val lineItem = PayPalLineItem(kind = PayPalLineItemKind.CREDIT , name="Item Name", unitAmount = amount,quantity = "1")
-
         val payPalRequest = PayPalVaultRequest(
             displayName = displayName,
             hasUserLocationConsent = true,
             billingAgreementDescription = billingAgreementDescription,
-            lineItems = arrayListOf(lineItem)
         )
 
         startPayPalFlow(payPalRequest)
-
     }
 
     private fun startPayPalFlow(request: PayPalVaultRequest) {
         try {
-
             paypalClient.createPaymentAuthRequest(
                 this, request
             ) { paymentAuthRequest ->
@@ -77,7 +63,6 @@ class PayPalActivity : ComponentActivity() {
                     is PayPalPaymentAuthRequest.ReadyToLaunch -> {
                         launch(paymentAuthRequest)
                     }
-
                 }
             }
         } catch (error: Exception) {
@@ -116,7 +101,6 @@ class PayPalActivity : ComponentActivity() {
     }
 
     private fun handleReturnToApp(intent: Intent) {
-        super.onResume()
         val pendingRequest = storedPendingRequest
 
         pendingRequest?.let {
@@ -169,6 +153,7 @@ class PayPalActivity : ComponentActivity() {
         val nonceJson = JSONObject().apply {
             put("nonce", nonce.string)
             put("isDefault", nonce.isDefault)
+            put("billingAddress", IntentUtils.postalAddressToJson(nonce.billingAddress))
             put("clientMetadataId", nonce.clientMetadataId ?: JSONObject.NULL)
             put("firstName", nonce.firstName)
             put("lastName", nonce.lastName)
@@ -194,7 +179,7 @@ class PayPalActivity : ComponentActivity() {
 
     private fun handleCancelResult(message: String) {
         val resultIntent = Intent().apply {
-            putExtra(Constants.CANCELED_KEY, message.toString())
+            putExtra(Constants.CANCELED_KEY, message)
         }
         setResult(RESULT_CANCELED, resultIntent)
         finish()
