@@ -2,8 +2,8 @@ class PayPalRequest {
   const PayPalRequest({
     required this.token,
     required this.amount,
-    required this.displayName, 
-    required this.androidAppLinkReturnUrl, 
+    required this.displayName,
+    required this.androidAppLinkReturnUrl,
     this.currencyCode = 'USD',
     this.androidDeepLinkFallbackUrlScheme,
     this.billingAgreementDescription,
@@ -18,12 +18,12 @@ class PayPalRequest {
   final String? billingAgreementDescription;
 
   Map<String, dynamic> toJson() => {
-      'token': token,
-      'amount': amount,
-      'currencyCode': currencyCode,
-      'displayName': displayName,
-      'androidAppLinkReturnUrl': androidAppLinkReturnUrl,
-      'androidDeepLinkFallbackUrlScheme': androidDeepLinkFallbackUrlScheme,
-      'billingAgreementDescription': billingAgreementDescription,
-    };
+    'token': token,
+    'amount': amount,
+    'currencyCode': currencyCode,
+    'displayName': displayName,
+    'androidAppLinkReturnUrl': androidAppLinkReturnUrl,
+    'androidDeepLinkFallbackUrlScheme': androidDeepLinkFallbackUrlScheme,
+    'billingAgreementDescription': billingAgreementDescription,
+  };
 }

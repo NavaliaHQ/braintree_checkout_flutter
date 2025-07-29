@@ -13,17 +13,20 @@ class VenmoAccountNonce {
     this.phoneNumber,
   });
 
-  factory VenmoAccountNonce.fromJson(Map<String, dynamic> json) => VenmoAccountNonce(
-    nonce: json['nonce'],
-    isDefault: json['isDefault'] ?? false,
-    username: json['username'] as String?,
-    billingAddress: json['billingAddress'] != null ? PostalAddress.fromJson(json['billingAddress']) : null,
-    email: json['email'] as String?,
-    externalId: json['externalId'] as String?,
-    firstName: json['firstName'] as String?,
-    lastName: json['lastName'] as String?,
-    phoneNumber: json['phoneNumber'] as String?,
-  );
+  factory VenmoAccountNonce.fromJson(Map<String, dynamic> json) =>
+      VenmoAccountNonce(
+        nonce: json['nonce'],
+        isDefault: json['isDefault'] ?? false,
+        username: json['username'] as String?,
+        billingAddress: json['billingAddress'] != null
+            ? PostalAddress.fromJson(json['billingAddress'])
+            : null,
+        email: json['email'] as String?,
+        externalId: json['externalId'] as String?,
+        firstName: json['firstName'] as String?,
+        lastName: json['lastName'] as String?,
+        phoneNumber: json['phoneNumber'] as String?,
+      );
 
   final String nonce;
   final bool isDefault;

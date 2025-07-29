@@ -11,14 +11,18 @@ export 'venmo/venmo_account_nonce.dart';
 export 'venmo/venmo_request.dart';
 
 class BraintreeCheckoutFlutter {
-  Future<VenmoAccountNonce?> venmoPayment(VenmoRequest request) => BraintreeCheckoutFlutterPlatform.instance.venmoPayment(request);
+  Future<VenmoAccountNonce?> venmoPayment(VenmoRequest request) =>
+      BraintreeCheckoutFlutterPlatform.instance.venmoPayment(request);
 
-  Future<PayPalAccountNonce?> paypalPayment(PayPalRequest request) => BraintreeCheckoutFlutterPlatform.instance.paypalPayment(request);
+  Future<PayPalAccountNonce?> paypalPayment(PayPalRequest request) =>
+      BraintreeCheckoutFlutterPlatform.instance.paypalPayment(request);
 
-  Future<String?> collectDeviceData(String token) => BraintreeCheckoutFlutterPlatform.instance.getData(token);
+  Future<String?> collectDeviceData(String token) =>
+      BraintreeCheckoutFlutterPlatform.instance.getData(token);
 
   Future<bool> isVenmoAppInstalled() async {
-    final isVenmoAppInstalled = await BraintreeCheckoutFlutterPlatform.instance.isVenmoAppInstalled();
+    final isVenmoAppInstalled = await BraintreeCheckoutFlutterPlatform.instance
+        .isVenmoAppInstalled();
     return isVenmoAppInstalled ?? false;
   }
 }

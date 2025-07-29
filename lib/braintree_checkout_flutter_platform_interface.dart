@@ -10,7 +10,8 @@ abstract class BraintreeCheckoutFlutterPlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
-  static BraintreeCheckoutFlutterPlatform _instance = MethodChannelBraintreeCheckoutFlutter();
+  static BraintreeCheckoutFlutterPlatform _instance =
+      MethodChannelBraintreeCheckoutFlutter();
 
   static BraintreeCheckoutFlutterPlatform get instance => _instance;
 

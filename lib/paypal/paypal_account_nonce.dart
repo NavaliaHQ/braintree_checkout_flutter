@@ -14,18 +14,21 @@ class PayPalAccountNonce {
     this.authenticateUrl,
   });
 
-  factory PayPalAccountNonce.fromJson(Map<String, dynamic> json) => PayPalAccountNonce(
-      nonce: json['nonce'] as String,
-      isDefault: json['isDefault'] as bool,
-      billingAddress: json['billingAddress'] != null ? PostalAddress.fromJson(json['billingAddress']) : null,
-      clientMetadataId: json['clientMetadataId'] as String?,
-      firstName: json['firstName'] as String?,
-      lastName: json['lastName'] as String?,
-      phone: json['phone'] as String?,
-      email: json['email'] as String?,
-      payerId: json['payerId'] as String,
-      authenticateUrl: json['authenticateUrl'] as String?,
-    );
+  factory PayPalAccountNonce.fromJson(Map<String, dynamic> json) =>
+      PayPalAccountNonce(
+        nonce: json['nonce'] as String,
+        isDefault: json['isDefault'] as bool,
+        billingAddress: json['billingAddress'] != null
+            ? PostalAddress.fromJson(json['billingAddress'])
+            : null,
+        clientMetadataId: json['clientMetadataId'] as String?,
+        firstName: json['firstName'] as String?,
+        lastName: json['lastName'] as String?,
+        phone: json['phone'] as String?,
+        email: json['email'] as String?,
+        payerId: json['payerId'] as String,
+        authenticateUrl: json['authenticateUrl'] as String?,
+      );
 
   final String nonce;
   final bool isDefault;
@@ -39,18 +42,19 @@ class PayPalAccountNonce {
   final String? authenticateUrl;
 
   Map<String, dynamic> toJson() => {
-      'nonce': nonce,
-      'isDefault': isDefault,
-      'clientMetadataId': clientMetadataId,
-      'billingAddress': billingAddress?.toJson(),
-      'firstName': firstName,
-      'lastName': lastName,
-      'phone': phone,
-      'email': email,
-      'payerId': payerId,
-      'authenticateUrl': authenticateUrl,
-    };
+    'nonce': nonce,
+    'isDefault': isDefault,
+    'clientMetadataId': clientMetadataId,
+    'billingAddress': billingAddress?.toJson(),
+    'firstName': firstName,
+    'lastName': lastName,
+    'phone': phone,
+    'email': email,
+    'payerId': payerId,
+    'authenticateUrl': authenticateUrl,
+  };
 
   @override
-  String toString() => 'PayPalAccountNonce{nonce: $nonce, isDefault: $isDefault, clientMetadataId: $clientMetadataId, firstName: $firstName, lastName: $lastName, phone: $phone, email: $email, payerId: $payerId, authenticateUrl: $authenticateUrl}';
+  String toString() =>
+      'PayPalAccountNonce{nonce: $nonce, isDefault: $isDefault, clientMetadataId: $clientMetadataId, firstName: $firstName, lastName: $lastName, phone: $phone, email: $email, payerId: $payerId, authenticateUrl: $authenticateUrl}';
 }
