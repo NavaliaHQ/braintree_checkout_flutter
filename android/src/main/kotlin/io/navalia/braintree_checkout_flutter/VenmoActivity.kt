@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
-
 import com.braintreepayments.api.venmo.VenmoClient
 import com.braintreepayments.api.venmo.VenmoLauncher
 import com.braintreepayments.api.venmo.VenmoPaymentAuthRequest

@@ -61,7 +61,6 @@ class BraintreeCheckoutFlutterPlugin : FlutterPlugin, MethodCallHandler, Activit
         }
     }
 
-
     private fun startActivity(
         activityClass: Class<out Activity>,
         activityRequestCode: Int,
@@ -70,12 +69,15 @@ class BraintreeCheckoutFlutterPlugin : FlutterPlugin, MethodCallHandler, Activit
         if (activity == null) {
             result.error(Constants.ERROR_KEY, "Activity is not available", null)
             return
-        } else {
-            val intent = Intent(activity, activityClass)
-            IntentUtils.putArguments(intent, arguments)
-            pendingResult = result
-            activity!!.startActivityForResult(intent, activityRequestCode)
+        } 
+        if (arguments.isEmpty()) {
+            result.error(Constants.ERROR_KEY, "Arguments is not available", null)
+            return
         }
+        val intent = Intent(activity, activityClass)
+        IntentUtils.putArguments(intent, arguments)
+        pendingResult = result
+        activity!!.startActivityForResult(intent, activityRequestCode)
     }
 
     fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
@@ -87,21 +89,18 @@ class BraintreeCheckoutFlutterPlugin : FlutterPlugin, MethodCallHandler, Activit
                     val nonce = intent.getStringExtra(Constants.NONCE_KEY)
                     pendingResult?.success(nonce)
                 }
-
                 resultCode == Activity.RESULT_CANCELED && intent != null -> {
                     val error = intent.getStringExtra(Constants.ERROR_KEY)
                     if (error != null) {
                         pendingResult?.error(Constants.ERROR_KEY, error, null)
                         return
                     }
-
                     val canceled = intent.getStringExtra(Constants.CANCELED_KEY)
                     if (canceled != null) {
                         pendingResult?.success(null)
                         return
                     }
                 }
-
                 else -> {
                     pendingResult?.success(null)
                 }
@@ -127,6 +126,7 @@ class BraintreeCheckoutFlutterPlugin : FlutterPlugin, MethodCallHandler, Activit
     }
 
     override fun onDetachedFromActivityForConfigChanges() {}
+
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
         activity = binding.activity
     }
@@ -136,18 +136,15 @@ class BraintreeCheckoutFlutterPlugin : FlutterPlugin, MethodCallHandler, Activit
             result.error(Constants.ERROR_KEY, "Activity is not available", null)
             return
         }
-
         try {
             val token = arguments[Constants.TOKEN_KEY] as? String
             if (token == null) {
                 result.error(Constants.ERROR_KEY, "Token is required for data collection", null)
                 return
             }
-
             val braintreeClient = BraintreeClient(activity!!, token)
             val dataCollector = DataCollector(braintreeClient)
             val dataCollectorRequest = DataCollectorRequest(hasUserLocationConsent = true)
-            
             dataCollector.collectDeviceData(activity!!, dataCollectorRequest) { dataCollectorResult ->
                 when (dataCollectorResult) {
                     is com.braintreepayments.api.datacollector.DataCollectorResult.Success -> {
