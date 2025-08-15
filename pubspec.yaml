@@ -1,6 +1,6 @@
 name: braintree_checkout_flutter
 description:  A Flutter plugin for integrating Braintree payments on iOS and Android. Supports PayPal and Venmo. 
-version: 1.0.2
+version: 1.0.3
 homepage: https://github.com/NavaliaHQ/braintree_checkout_flutter
 
 environment:
