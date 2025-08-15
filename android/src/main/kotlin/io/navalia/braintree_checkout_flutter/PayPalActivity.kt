@@ -21,16 +21,16 @@ class PayPalActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val intent = intent
-        
-        val token: String = intent.getStringExtra(Constants.TOKEN_KEY) as String
-        val displayName: String = intent.getStringExtra(Constants.DISPLAY_NAME_KEY) as String
-        val appLinkReturnUrl: String =
-            intent.getStringExtra(Constants.ANDROID_APP_LINK_RETURN_URL) as String
-        val deepLinkFallbackUrlScheme: String? =
-            intent.getStringExtra(Constants.ANDROID_DEEP_LINK_FALLBACK_URL_SCHEME)
-        val billingAgreementDescription: String? =
-            intent.getStringExtra(Constants.BILLING_AGREEMENT_DESCRIPTION)
+        val token = intent.getStringExtra(Constants.TOKEN_KEY)
+        val displayName = intent.getStringExtra(Constants.DISPLAY_NAME_KEY)
+        val appLinkReturnUrl = intent.getStringExtra(Constants.ANDROID_APP_LINK_RETURN_URL)
+        val deepLinkFallbackUrlScheme = intent.getStringExtra(Constants.ANDROID_DEEP_LINK_FALLBACK_URL_SCHEME)
+        val billingAgreementDescription = intent.getStringExtra(Constants.BILLING_AGREEMENT_DESCRIPTION)
+
+        if (token.isNullOrBlank() || displayName.isNullOrBlank() || appLinkReturnUrl.isNullOrBlank()) {
+            handleErrorResult(IllegalArgumentException("Missing required PayPal parameters"))
+            return
+        }
 
         paypalLauncher = PayPalLauncher()
         paypalClient = PayPalClient(

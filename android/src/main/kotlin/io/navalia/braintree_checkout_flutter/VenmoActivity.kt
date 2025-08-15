@@ -25,14 +25,16 @@ class VenmoActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val intent = intent;
-        val token: String = intent.getStringExtra(Constants.TOKEN_KEY) as String
-        val displayName: String = intent.getStringExtra(Constants.DISPLAY_NAME_KEY) as String
-        val amount: String = intent.getStringExtra(Constants.AMOUNT_KEY) as String
-        val appLinkReturnUrl: String =
-            intent.getStringExtra(Constants.ANDROID_APP_LINK_RETURN_URL) as String
-        val deepLinkFallbackUrlScheme: String? =
-            intent.getStringExtra(Constants.ANDROID_DEEP_LINK_FALLBACK_URL_SCHEME)
+        val token = intent.getStringExtra(Constants.TOKEN_KEY)
+        val displayName = intent.getStringExtra(Constants.DISPLAY_NAME_KEY)
+        val amount = intent.getStringExtra(Constants.AMOUNT_KEY)
+        val appLinkReturnUrl = intent.getStringExtra(Constants.ANDROID_APP_LINK_RETURN_URL)
+        val deepLinkFallbackUrlScheme = intent.getStringExtra(Constants.ANDROID_DEEP_LINK_FALLBACK_URL_SCHEME)
+
+        if (token.isNullOrBlank() || displayName.isNullOrBlank() || amount.isNullOrBlank() || appLinkReturnUrl.isNullOrBlank()) {
+            handleErrorResult(IllegalArgumentException("Missing required Venmo parameters"))
+            return
+        }
 
         venmoLauncher = VenmoLauncher()
         venmoClient = VenmoClient(
@@ -46,7 +48,8 @@ class VenmoActivity : ComponentActivity() {
             VenmoPaymentMethodUsage.MULTI_USE,
             totalAmount = amount,
             displayName = displayName,
-            )
+        )
+
         startVenmoFlow(venmoRequest)
     }
 
