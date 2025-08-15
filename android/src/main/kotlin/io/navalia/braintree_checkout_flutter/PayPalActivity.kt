@@ -22,34 +22,32 @@ class PayPalActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-         if (savedInstanceState == null) {
-            val token = intent.getStringExtra(Constants.TOKEN_KEY)
-            val displayName = intent.getStringExtra(Constants.DISPLAY_NAME_KEY)
-            val appLinkReturnUrl = intent.getStringExtra(Constants.ANDROID_APP_LINK_RETURN_URL)
-            val deepLinkFallbackUrlScheme = intent.getStringExtra(Constants.ANDROID_DEEP_LINK_FALLBACK_URL_SCHEME)
-            val billingAgreementDescription = intent.getStringExtra(Constants.BILLING_AGREEMENT_DESCRIPTION)
+        val token = intent.getStringExtra(Constants.TOKEN_KEY)
+        val displayName = intent.getStringExtra(Constants.DISPLAY_NAME_KEY)
+        val appLinkReturnUrl = intent.getStringExtra(Constants.ANDROID_APP_LINK_RETURN_URL)
+        val deepLinkFallbackUrlScheme = intent.getStringExtra(Constants.ANDROID_DEEP_LINK_FALLBACK_URL_SCHEME)
+        val billingAgreementDescription = intent.getStringExtra(Constants.BILLING_AGREEMENT_DESCRIPTION)
 
-            if (token.isNullOrBlank() || displayName.isNullOrBlank() || appLinkReturnUrl.isNullOrBlank()) {
-                handleErrorResult(IllegalArgumentException("Missing required PayPal parameters"))
-                return
-            }
-
-            paypalLauncher = PayPalLauncher()
-            paypalClient = PayPalClient(
-                context = this,
-                authorization = token,
-                appLinkReturnUrl = Uri.parse("$appLinkReturnUrl.paypal"),
-                deepLinkFallbackUrlScheme = "$deepLinkFallbackUrlScheme.paypal",
-            )
-
-            val payPalRequest = PayPalVaultRequest(
-                displayName = displayName,
-                hasUserLocationConsent = true,
-                billingAgreementDescription = billingAgreementDescription,
-            )
-
-            startPayPalFlow(payPalRequest)
+        if (token.isNullOrBlank() || displayName.isNullOrBlank() || appLinkReturnUrl.isNullOrBlank()) {
+            handleErrorResult(IllegalArgumentException("Missing required PayPal parameters"))
+            return
         }
+
+        paypalLauncher = PayPalLauncher()
+        paypalClient = PayPalClient(
+            context = this,
+            authorization = token,
+            appLinkReturnUrl = Uri.parse("$appLinkReturnUrl.paypal"),
+            deepLinkFallbackUrlScheme = "$deepLinkFallbackUrlScheme.paypal",
+        )
+
+        val payPalRequest = PayPalVaultRequest(
+            displayName = displayName,
+            hasUserLocationConsent = true,
+            billingAgreementDescription = billingAgreementDescription,
+        )
+
+        startPayPalFlow(payPalRequest)
     }
 
     private fun startPayPalFlow(request: PayPalVaultRequest) {
@@ -95,6 +93,11 @@ class PayPalActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        handleReturnToApp(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
         handleReturnToApp(intent)
     }
 
