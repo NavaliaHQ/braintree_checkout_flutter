@@ -1,3 +1,7 @@
+## 1.0.2
+
+Adjust launch mode to singleTask and add more guards
+
 ## 1.0.1
 
 Fix error where arguments are not set in activity
