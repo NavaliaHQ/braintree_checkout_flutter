@@ -1,3 +1,7 @@
+## 1.0.4
+
+Update launch mode on Android Manifest for PayPal
+
 ## 1.0.3
 
 Adjust onResume for PayPal and Venmo activities

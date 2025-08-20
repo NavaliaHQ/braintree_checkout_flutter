@@ -21,7 +21,7 @@
         <activity
             android:name=".PayPalActivity"
             android:exported="true"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:theme="@android:style/Theme.Light.NoTitleBar"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize">
