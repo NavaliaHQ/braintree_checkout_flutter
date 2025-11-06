@@ -51,6 +51,7 @@ android {
         implementation("com.braintreepayments.api:venmo:5.8.0")
         implementation("com.braintreepayments.api:paypal:5.8.0")
         implementation("com.braintreepayments.api:data-collector:5.8.0")
+        implementation ("com.braintreepayments.api:card:5.8.0")
         implementation('androidx.appcompat:appcompat:1.7.0')
 
         testImplementation("org.jetbrains.kotlin:kotlin-test")

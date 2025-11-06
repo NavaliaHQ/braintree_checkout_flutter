@@ -1,4 +1,6 @@
 import 'package:braintree_checkout_flutter/braintree_checkout_flutter_platform_interface.dart';
+import 'package:braintree_checkout_flutter/card/card_account_nonce.dart';
+import 'package:braintree_checkout_flutter/card/card_request.dart';
 import 'package:braintree_checkout_flutter/paypal/paypal_account_nonce.dart';
 import 'package:braintree_checkout_flutter/paypal/paypal_request.dart';
 import 'package:braintree_checkout_flutter/venmo/venmo_account_nonce.dart';
@@ -16,6 +18,9 @@ class BraintreeCheckoutFlutter {
 
   Future<PayPalAccountNonce?> paypalPayment(PayPalRequest request) =>
       BraintreeCheckoutFlutterPlatform.instance.paypalPayment(request);
+
+  Future<CardAccountNonce?> tokenizeCard(CardRequest request) =>
+      BraintreeCheckoutFlutterPlatform.instance.tokenizeCard(request);
 
   Future<String?> collectDeviceData(String token) =>
       BraintreeCheckoutFlutterPlatform.instance.getData(token);
