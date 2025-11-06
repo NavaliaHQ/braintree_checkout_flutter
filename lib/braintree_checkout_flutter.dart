@@ -11,6 +11,8 @@ export 'paypal/paypal_account_nonce.dart';
 export 'paypal/paypal_request.dart';
 export 'venmo/venmo_account_nonce.dart';
 export 'venmo/venmo_request.dart';
+export 'card/card_account_nonce.dart';
+export 'card/card_request.dart';
 
 class BraintreeCheckoutFlutter {
   Future<VenmoAccountNonce?> venmoPayment(VenmoRequest request) =>
