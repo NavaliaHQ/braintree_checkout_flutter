@@ -1,7 +1,7 @@
 
 # braintree_checkout_flutter
 
-A Flutter plugin that enables seamless **PayPal** and **Venmo** payments using **Braintree**, with support for native mobile experiences and device data collection for fraud prevention.
+A Flutter plugin that enables seamless **PayPal**, **Venmo** and **Card** payments using **Braintree**, with support for native mobile experiences and device data collection for fraud prevention.
 
 ⚠️ **Note:** This plugin currently supports **Vault (tokenize only)** transactions. You are responsible for capturing the payment server-side using the nonce returned. Full **Checkout (automatic capture)** is not supported at this time.
 
@@ -9,6 +9,7 @@ A Flutter plugin that enables seamless **PayPal** and **Venmo** payments using *
 
 - Native **PayPal** payment flow 
 - Native **Venmo** payment flow 
+- Native **Card** payment flow 
 - **Device data** collection
 - Venmo App availability check
 
@@ -18,6 +19,7 @@ A Flutter plugin that enables seamless **PayPal** and **Venmo** payments using *
 |----------------------|:-------:|:---:|
 | PayPal Vault         |   ✅    | ✅  |
 | Venmo Vault          |   ✅    | ✅  |
+| Card Vault           |   ✅    | ✅  |
 | Device Data Collect  |   ✅    | ✅  |
 
 ## Installation
@@ -109,6 +111,25 @@ if (result != null) {
 }
 ```
 
+### Card Vault Transaction
+
+```dart
+final result = await checkout.tokenizeCard(
+  CardRequest(
+    token: 'your-client-token-or-tokenization-key',
+    cardholderName: 'cardholder-name',
+    cardNumber: 'card-number',
+    expirationMonth: 'expiration-month',
+    exoprationYear: 'expiration-year',
+    cvv: 'cvv',
+  ),
+);
+
+if (result != null) {
+  print('Card nonce: ${result.nonce}');
+}
+```
+
 ### Device Data Collection
 
 ```dart
@@ -129,6 +150,7 @@ The plugin exports these models:
 
 * `PayPalRequest`, `PayPalAccountNonce`
 * `VenmoRequest`, `VenmoAccountNonce`
+* `CardRequest`, `CardAccountNonce`
 * `PostalAddress` (for PayPal shipping address)
 
 ## Contributing
