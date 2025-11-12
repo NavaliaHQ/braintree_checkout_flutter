@@ -68,6 +68,15 @@ class BraintreeCheckoutFlutterPlugin : FlutterPlugin, MethodCallHandler, Activit
                 tokenizeCard(arguments, result)
             }
 
+            Constants.THREE_D_SECURE_METHOD_KEY -> {
+                val arguments = call.arguments as? Map<String, Any> ?: emptyMap()
+                startActivity(
+                    ThreeDSecureActivity::class.java,
+                    Constants.THREE_D_SECURE_REQUEST_CODE,
+                    arguments, result,
+                )
+            }
+
             else -> result.notImplemented()
         }
     }
@@ -94,6 +103,7 @@ class BraintreeCheckoutFlutterPlugin : FlutterPlugin, MethodCallHandler, Activit
     fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
         if (requestCode == Constants.VENMO_REQUEST_CODE
             || requestCode == Constants.PAYPAL_REQUEST_CODE
+            || requestCode == Constants.THREE_D_SECURE_REQUEST_CODE
         ) {
             when {
                 resultCode == Activity.RESULT_OK && intent != null -> {

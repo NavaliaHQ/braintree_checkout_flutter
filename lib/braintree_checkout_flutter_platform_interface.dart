@@ -3,6 +3,8 @@ import 'package:braintree_checkout_flutter/card/card_account_nonce.dart';
 import 'package:braintree_checkout_flutter/card/card_request.dart';
 import 'package:braintree_checkout_flutter/paypal/paypal_account_nonce.dart';
 import 'package:braintree_checkout_flutter/paypal/paypal_request.dart';
+import 'package:braintree_checkout_flutter/three_d_secure/three_d_secure_nonce.dart';
+import 'package:braintree_checkout_flutter/three_d_secure/three_d_secure_request.dart';
 import 'package:braintree_checkout_flutter/venmo/venmo_account_nonce.dart';
 import 'package:braintree_checkout_flutter/venmo/venmo_request.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -27,6 +29,8 @@ abstract class BraintreeCheckoutFlutterPlatform extends PlatformInterface {
   Future<PayPalAccountNonce?> paypalPayment(PayPalRequest request);
 
   Future<CardAccountNonce?> tokenizeCard(CardRequest request);
+
+  Future<ThreeDSecureNonce?> threeDSecurePayment(ThreeDSecureRequest request);
 
   Future<bool?> isVenmoAppInstalled();
 

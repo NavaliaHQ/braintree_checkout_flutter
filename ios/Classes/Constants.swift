@@ -6,6 +6,7 @@ public struct Constants {
     static let PAYPAL_PAYMENT_METHOD_KEY = "paypalPayment"
     static let IS_VENMO_APP_INSTALLED = "isVenmoAppInstalled"
     static let TOKENIZE_CARD_METHOD_KEY = "tokenizeCard"
+    static let THREE_D_SECURE_METHOD_KEY = "threeDSecurePayment"
 
     //Request keys
     static let TOKEN_KEY = "token"
@@ -27,6 +28,9 @@ public struct Constants {
     static let EXPIRATION_YEAR_KEY = "expirationYear"
     static let CVV_KEY = "cvv"
     
+    //Request keys - 3DS
+    static let EMAIL_KEY = "email"
+
     //Response keys
     static let NONCE_KEY = "nonce"
     static let CANCELED_KEY = "canceled"

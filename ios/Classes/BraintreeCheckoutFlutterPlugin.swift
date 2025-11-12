@@ -39,6 +39,9 @@ public class BraintreeCheckoutFlutterPlugin: NSObject, FlutterPlugin {
         case Constants.TOKENIZE_CARD_METHOD_KEY:
             tokenizeCard(arguments: call.arguments, result: result)
         
+        case Constants.THREE_D_SECURE_METHOD_KEY:
+            ThreeDSecureHandler.handle(arguments: call.arguments, result: result)
+            
         default:
             result(FlutterMethodNotImplemented)
         }

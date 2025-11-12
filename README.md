@@ -20,6 +20,7 @@ A Flutter plugin that enables seamless **PayPal**, **Venmo** and **Card** paymen
 | PayPal Vault         |   ✅    | ✅  |
 | Venmo Vault          |   ✅    | ✅  |
 | Card Vault           |   ✅    | ✅  |
+| 3D Secure            |   ✅    | ✅  |
 | Device Data Collect  |   ✅    | ✅  |
 
 ## Installation
@@ -127,6 +128,23 @@ final result = await checkout.tokenizeCard(
 
 if (result != null) {
   print('Card nonce: ${result.nonce}');
+}
+```
+
+### 3D Secure Transaction
+
+```dart
+final result = await braintree.threeDSecurePayment(
+  ThreeDSecureRequest(
+    token: 'your-client-token-or-tokenization-key',
+    amount: 'amount',
+    nonce: 'card-nonce',
+    email: 'optional-user-email',
+  ),
+);
+
+if (result != null) {
+  print('3D Secure nonce: ${result.nonce}');
 }
 ```
 
