@@ -35,7 +35,13 @@ public class BraintreeCheckoutFlutterPlugin: NSObject, FlutterPlugin {
             
         case Constants.IS_VENMO_APP_INSTALLED:
             VenmoHandler.isVenmoAppInstalled(result: result)
-
+            
+        case Constants.TOKENIZE_CARD_METHOD_KEY:
+            tokenizeCard(arguments: call.arguments, result: result)
+        
+        case Constants.THREE_D_SECURE_METHOD_KEY:
+            ThreeDSecureHandler.handle(arguments: call.arguments, result: result)
+            
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -71,6 +77,64 @@ public class BraintreeCheckoutFlutterPlugin: NSObject, FlutterPlugin {
             } else {
                 result(FlutterError(code: Constants.ERROR_KEY, message: "Device data collection failed", details: "No data and no error returned"))
             }
+        }
+    }
+    
+    private func tokenizeCard(arguments: Any?, result: @escaping FlutterResult) {
+        guard let args = arguments as? [String: Any] else { return }
+        
+        guard
+            let token = args[Constants.TOKEN_KEY] as? String,
+            let cardholderName = args[Constants.CARDHOLDER_NAME_KEY] as? String,
+            let cardNumber = args[Constants.CARD_NUMBER_KEY] as? String,
+            let expirationMonth = args[Constants.EXPIRATION_MONTH_KEY] as? String,
+            let expirationYear = args[Constants.EXPIRATION_YEAR_KEY] as? String,
+            let cvv = args[Constants.CVV_KEY] as? String
+        else {
+            flutterResult?(FlutterError(code: Constants.ERROR_KEY, message: "Token, card number, expiration month, expiration year and cvv are required for tokenization", details: nil))
+            return
+        }
+        
+        guard let braintreeClient = BTAPIClient(authorization: token) else {
+            flutterResult?(FlutterError(code: Constants.ERROR_KEY, message: "Invalid Braintree client", details: nil))
+            return
+        }
+        
+        let cardClient = BTCardClient(apiClient: braintreeClient)
+        let card = BTCard()
+        card.cardholderName = cardholderName
+        card.number = cardNumber
+        card.expirationMonth = expirationMonth
+        card.expirationYear = expirationYear
+        card.cvv = cvv
+        cardClient.tokenize(card) { tokenizedCard, error in
+            if let error = error {
+                result(FlutterError(code: Constants.ERROR_KEY, message: error.localizedDescription, details: nil))
+            } else if let tokenizedCard = tokenizedCard {
+                let json: [String: Any?] = [
+                    "nonce": tokenizedCard.nonce,
+                    "isDefault": tokenizedCard.isDefault,
+                    "cardType": tokenizedCard.type,
+                    "lastTwo": tokenizedCard.lastTwo,
+                    "lastFour": tokenizedCard.lastFour,
+                    "expirationMonth": tokenizedCard.expirationMonth,
+                    "expirationYear": tokenizedCard.expirationYear,
+                    "cardholderName": tokenizedCard.cardholderName
+                ]
+                self.sendSuccess(json: json, result: result)
+            } else {
+                result(FlutterError(code: Constants.ERROR_KEY, message: "Tokenize card failed", details: "No data and no error returned"))
+            }
+        }
+    }
+    
+    private func sendSuccess(json: [String: Any?], result: @escaping FlutterResult) {
+        do {
+            let data = try JSONSerialization.data(withJSONObject: json, options: [])
+            let jsonString = String(data: data, encoding: .utf8)
+            result(jsonString)
+        } catch {
+            result(FlutterError(code: Constants.ERROR_KEY, message: "Failed to serialize JSON", details: error.localizedDescription))
         }
     }
 }

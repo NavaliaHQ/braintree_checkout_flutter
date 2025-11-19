@@ -19,5 +19,6 @@ A new Flutter plugin project.
   s.swift_version = '5.0'
   s.dependency 'Flutter'
   s.dependency 'Braintree/Venmo', '6.30.0'
+  s.dependency 'Braintree/ThreeDSecure', '6.30.0'
   s.dependency 'Braintree', '6.30.0'
 end

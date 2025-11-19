@@ -1,8 +1,12 @@
 package io.navalia.braintree_checkout_flutter
 
 import android.app.Activity
+import android.app.Activity.RESULT_OK
 import android.content.Context
 import android.content.Intent
+import com.braintreepayments.api.card.Card
+import com.braintreepayments.api.card.CardClient
+import com.braintreepayments.api.card.CardResult
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -14,6 +18,8 @@ import com.braintreepayments.api.datacollector.DataCollector
 import com.braintreepayments.api.datacollector.DataCollectorRequest
 import com.braintreepayments.api.core.BraintreeClient
 import com.braintreepayments.api.core.DeviceInspector
+import com.braintreepayments.api.paypal.PayPalResult
+import org.json.JSONObject
 
 class BraintreeCheckoutFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     private lateinit var channel: MethodChannel
@@ -57,6 +63,20 @@ class BraintreeCheckoutFlutterPlugin : FlutterPlugin, MethodCallHandler, Activit
                 result.success(isVenmoAppInstalled)
             }
 
+            Constants.TOKENIZE_CARD_METHOD_KEY -> {
+                val arguments = call.arguments as? Map<String, Any> ?: emptyMap()
+                tokenizeCard(arguments, result)
+            }
+
+            Constants.THREE_D_SECURE_METHOD_KEY -> {
+                val arguments = call.arguments as? Map<String, Any> ?: emptyMap()
+                startActivity(
+                    ThreeDSecureActivity::class.java,
+                    Constants.THREE_D_SECURE_REQUEST_CODE,
+                    arguments, result,
+                )
+            }
+
             else -> result.notImplemented()
         }
     }
@@ -83,6 +103,7 @@ class BraintreeCheckoutFlutterPlugin : FlutterPlugin, MethodCallHandler, Activit
     fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
         if (requestCode == Constants.VENMO_REQUEST_CODE
             || requestCode == Constants.PAYPAL_REQUEST_CODE
+            || requestCode == Constants.THREE_D_SECURE_REQUEST_CODE
         ) {
             when {
                 resultCode == Activity.RESULT_OK && intent != null -> {
@@ -158,5 +179,62 @@ class BraintreeCheckoutFlutterPlugin : FlutterPlugin, MethodCallHandler, Activit
         } catch (e: Exception) {
             result.error(Constants.ERROR_KEY, "Error during device data collection", e.localizedMessage)
         }
+    }
+
+    private fun tokenizeCard(arguments: Map<String, Any>, result: Result) {
+        if (activity == null) {
+            result.error(Constants.ERROR_KEY, "Activity is not available", null)
+            return
+        }
+        try {
+            val token = arguments[Constants.TOKEN_KEY] as? String
+            val cardholderName = arguments[Constants.CARDHOLDER_NAME_KEY] as? String
+            val cardNumber = arguments[Constants.CARD_NUMBER_KEY] as? String
+            val expirationMonth = arguments[Constants.EXPIRATION_MONTH_KEY] as? String
+            val expirationYear = arguments[Constants.EXPIRATION_YEAR_KEY] as? String
+            val cvv = arguments[Constants.CVV_KEY] as? String
+            if (token == null || cardNumber == null || expirationMonth == null || expirationYear == null || cvv == null) {
+                result.error(Constants.ERROR_KEY, "Token, card number, expiration month, expiration year and cvv are required for tokenization", null)
+                return
+            }
+            val card = Card(
+                cardholderName = cardholderName,
+                number = cardNumber,
+                expirationMonth = expirationMonth,
+                expirationYear = expirationYear,
+                cvv = cvv
+            )
+            val cardClient = CardClient(
+                activity!!, token
+            )
+            cardClient.tokenize(card) { cardResult ->
+                when (cardResult) {
+                    is CardResult.Success -> {
+                        result.success(parseSuccessResult(cardResult))
+                    }
+
+                    is CardResult.Failure -> {
+                        result.error(Constants.ERROR_KEY, "Tokenize card failed", cardResult.error.localizedMessage)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            result.error(Constants.ERROR_KEY, "Error during device data collection", e.localizedMessage)
+        }
+    }
+
+     private fun parseSuccessResult(result: CardResult.Success) : String {
+        val nonce = result.nonce
+        val nonceJson = JSONObject().apply {
+            put("nonce", nonce.string)
+            put("isDefault", nonce.isDefault)
+            put("cardType", nonce.cardType)
+            put("lastTwo", nonce.lastTwo)
+            put("lastFour", nonce.lastFour)
+            put("expirationMonth", nonce.expirationMonth)
+            put("expirationYear", nonce.expirationYear)
+            put("cardholderName", nonce.cardholderName)
+        }
+        return nonceJson.toString()
     }
 }
