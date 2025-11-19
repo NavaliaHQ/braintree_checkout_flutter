@@ -1,3 +1,7 @@
+## 1.1.0
+
+Add support for 3D secure and cart tokenization
+
 ## 1.0.4
 
 Update launch mode on Android Manifest for PayPal
