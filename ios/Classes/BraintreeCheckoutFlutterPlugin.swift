@@ -2,7 +2,7 @@ import Flutter
 import UIKit
 import Braintree
 
-public class BraintreeCheckoutFlutterPlugin: NSObject, FlutterPlugin {
+public class BraintreeCheckoutFlutterPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDelegate {
     private var flutterResult: FlutterResult?
     var universalLinkURL: URL?
     
@@ -14,6 +14,8 @@ public class BraintreeCheckoutFlutterPlugin: NSObject, FlutterPlugin {
         let channel = FlutterMethodChannel(name: "braintree_checkout_flutter", binaryMessenger: registrar.messenger())
         let instance = BraintreeCheckoutFlutterPlugin.shared
         registrar.addMethodCallDelegate(instance, channel: channel)
+        registrar.addApplicationDelegate(instance)
+        registrar.addSceneDelegate(instance)
     }
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -155,6 +157,23 @@ extension BraintreeCheckoutFlutterPlugin {
             return true
         }
         
+        return false
+    }
+
+    public func scene(
+        _ scene: UIScene,
+        continue userActivity: NSUserActivity
+    ) -> Bool {
+        guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+              let url = userActivity.webpageURL else {
+            return false
+        }
+
+        if isBraintreeUniversalLink(url: url) {
+            BTAppContextSwitcher.sharedInstance.handleOpen(url)
+            return true
+        }
+
         return false
     }
 }
