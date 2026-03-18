@@ -1,3 +1,7 @@
+## 2.0.0
+
+Migrate to support UISceneDelegate protocol
+
 ## 1.1.0
 
 Add support for 3D secure and cart tokenization
