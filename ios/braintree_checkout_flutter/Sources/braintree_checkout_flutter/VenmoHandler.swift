@@ -1,4 +1,11 @@
+import UIKit
+import Foundation
+#if SWIFT_PACKAGE
+import BraintreeCore
+import BraintreeVenmo
+#else
 import Braintree
+#endif
 import Flutter
 
 class VenmoHandler {

@@ -1,6 +1,13 @@
+import Foundation
 import Flutter
 import UIKit
+#if SWIFT_PACKAGE
+import BraintreeCore
+import BraintreeCard
+import BraintreeDataCollector
+#else
 import Braintree
+#endif
 
 public class BraintreeCheckoutFlutterPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDelegate {
     private var flutterResult: FlutterResult?

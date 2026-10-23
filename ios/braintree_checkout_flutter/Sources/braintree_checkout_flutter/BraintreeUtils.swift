@@ -1,4 +1,9 @@
+import Foundation
+#if SWIFT_PACKAGE
+import BraintreeCore
+#else
 import Braintree
+#endif
 
 public struct BraintreeUtils {
     static func postalAddressToJson(_ address: BTPostalAddress) -> [String: Any] {
