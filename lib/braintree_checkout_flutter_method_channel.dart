@@ -1,3 +1,4 @@
+import 'package:braintree_checkout_flutter/paypal/paypal_checkout_request.dart';
 import 'dart:convert';
 
 import 'package:braintree_checkout_flutter/braintree_checkout_flutter_platform_interface.dart';
@@ -45,6 +46,54 @@ class MethodChannelBraintreeCheckoutFlutter
       return null;
     }
   }
+
+  @override
+  Future<PayPalAccountNonce?> paypalCheckoutPayment(
+    PayPalCheckoutRequest request,
+  ) async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) {
+      throw PlatformException(
+        code: 'unsupported_platform',
+        message: 'PayPal Checkout is currently supported only on iOS.',
+      );
+    }
+    try {
+      request.validate();
+    } on ArgumentError {
+      throw PlatformException(
+        code: 'invalid_arguments',
+        message: 'Invalid PayPal Checkout request.',
+      );
+    }
+
+    final response = await methodChannel.invokeMethod<Object?>(
+      BraintreeConstants.paypalCheckoutPaymentMethodKey,
+      request.toJson(),
+    );
+    try {
+      if (response is! String) {
+        throw const FormatException();
+      }
+      final decoded = jsonDecode(response);
+      if (decoded is! Map<String, dynamic>) {
+        throw const FormatException();
+      }
+      final account = PayPalAccountNonce.fromJson(decoded);
+      if (account.nonce.trim().isEmpty) {
+        throw const FormatException();
+      }
+      return account;
+    } on FormatException {
+      throw _invalidCheckoutResponse();
+    } on TypeError {
+      throw _invalidCheckoutResponse();
+    }
+  }
+
+  PlatformException _invalidCheckoutResponse() => PlatformException(
+    code: 'error',
+    message: 'Invalid PayPal Checkout response.',
+  );
 
   @override
   Future<CardAccountNonce?> tokenizeCard(CardRequest request) async {

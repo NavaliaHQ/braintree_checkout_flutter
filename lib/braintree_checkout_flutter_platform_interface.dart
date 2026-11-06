@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+import 'package:braintree_checkout_flutter/paypal/paypal_checkout_request.dart';
 import 'package:braintree_checkout_flutter/braintree_checkout_flutter_method_channel.dart';
 import 'package:braintree_checkout_flutter/card/card_account_nonce.dart';
 import 'package:braintree_checkout_flutter/card/card_request.dart';
@@ -27,6 +29,19 @@ abstract class BraintreeCheckoutFlutterPlatform extends PlatformInterface {
   Future<VenmoAccountNonce?> venmoPayment(VenmoRequest request);
 
   Future<PayPalAccountNonce?> paypalPayment(PayPalRequest request);
+
+  /// Explicit Vault alias preserving the legacy platform implementation.
+  Future<PayPalAccountNonce?> paypalVaultPayment(PayPalRequest request) =>
+      paypalPayment(request);
+
+  /// Platforms must opt in to one-time checkout; never falls back to Vault.
+  Future<PayPalAccountNonce?> paypalCheckoutPayment(
+    PayPalCheckoutRequest request,
+  ) async => throw PlatformException(
+    code: 'unsupported_platform',
+    message:
+        'PayPal Checkout is not supported by this platform implementation.',
+  );
 
   Future<CardAccountNonce?> tokenizeCard(CardRequest request);
 
