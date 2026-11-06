@@ -1,3 +1,12 @@
+## Unreleased
+
+- Add iOS PayPal One-Time Checkout through `paypalCheckoutPayment` and the typed
+  `PayPalCheckoutRequest`, intent and user-action enums.
+- Add `paypalVaultPayment` as an explicit alias for the existing Vault API.
+- Preserve legacy contracts and reject OTC on unsupported platforms without fallback.
+- Handle OTC cancellation, input validation, nullable payer details and concurrent
+  PayPal operations; add Dart and iOS regression tests.
+
 ## 2.0.0
 
 Migrate to support UISceneDelegate protocol
