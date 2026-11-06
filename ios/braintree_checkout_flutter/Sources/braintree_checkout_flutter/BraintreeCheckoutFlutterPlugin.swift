@@ -10,6 +10,7 @@ import Braintree
 #endif
 
 public class BraintreeCheckoutFlutterPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDelegate {
+    private let paypalFlowCoordinator = PayPalFlowCoordinator()
     private var flutterResult: FlutterResult?
     var universalLinkURL: URL?
     
@@ -37,7 +38,10 @@ public class BraintreeCheckoutFlutterPlugin: NSObject, FlutterPlugin, FlutterSce
             }
 
         case Constants.PAYPAL_PAYMENT_METHOD_KEY:
-            PayPalHandler.handle(arguments: call.arguments, result: result)
+            paypalFlowCoordinator.handleVault(arguments: call.arguments, result: result)
+
+        case Constants.PAYPAL_CHECKOUT_PAYMENT_METHOD_KEY:
+            paypalFlowCoordinator.handleCheckout(arguments: call.arguments, result: result)
 
         case Constants.VENMO_PAYMENT_METHOD_KEY:
             VenmoHandler.handle(arguments: call.arguments, result: result)
