@@ -22,6 +22,7 @@ class BraintreeCheckoutFlutter {
   Future<VenmoAccountNonce?> venmoPayment(VenmoRequest request) =>
       BraintreeCheckoutFlutterPlatform.instance.venmoPayment(request);
 
+  @Deprecated('Use paypalVaultPayment() instead.')
   Future<PayPalAccountNonce?> paypalPayment(PayPalRequest request) =>
       BraintreeCheckoutFlutterPlatform.instance.paypalPayment(request);
 
