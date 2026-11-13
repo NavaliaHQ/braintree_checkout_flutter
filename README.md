@@ -130,11 +130,48 @@ Defaults are `PayPalCheckoutIntent.authorize` and
 selected explicitly. Align intent and currency with server processing and the
 merchant account; even `sale`/`payNow` still requires your backend transaction.
 
-This version uses the SDK web authentication session on iOS 14+ with Braintree
-6.30.0, through CocoaPods or SPM. OTC does not require an Android return URL or
-new universal-link setup. PayPal App Switch, shipping collection, Pay Later and
-Checkout with Vault are not enabled. A billing agreement is never requested.
-The app-switch setup above applies to other existing flows, not this OTC API.
+This version uses Braintree 6.30.0 on iOS 14+, through CocoaPods or SPM.
+Shipping collection, Pay Later and Checkout with Vault are not enabled.
+A billing agreement is never requested. Android Checkout remains unsupported.
+
+#### PayPal App Switch (iOS Checkout only)
+
+`PayPalCheckoutRequest.enablePayPalAppSwitch` defaults to `true`. To enable
+App Switch, pass your configured HTTPS `universalLink` and complete the native
+setup below. For example, add these options to the request above:
+
+```dart
+enablePayPalAppSwitch: true,
+universalLink: 'https://your-domain.example/paypal-return',
+```
+
+The SDK determines whether the PayPal app is installed and the buyer/merchant
+is eligible. If unavailable, the existing `ASWebAuthenticationSession` web
+experience is used. A missing or unusable `universalLink` also uses web checkout.
+Set `enablePayPalAppSwitch: false` to go directly to web checkout, even if a
+return link is supplied. Failure to open the PayPal app triggers one web attempt;
+cancellation and other payment errors are returned without retrying.
+
+Configure the **consumer iOS app**:
+
+1. Add `paypal-app-switch-checkout` to `LSApplicationQueriesSchemes` in
+   `Info.plist` (the scheme used by SDK 6.30.0). Preserve existing schemes.
+2. Enable Associated Domains with `applinks:your-domain.example` and host an
+   `apple-app-site-association` file for your app's Team ID and bundle ID.
+   Include `/paypal-return/braintreeAppSwitchPayPal/*` in the allowed paths.
+   Braintree appends `braintreeAppSwitchPayPal` to the supplied base link.
+3. Allow-list the return URL with Braintree as required for your merchant.
+   Use a dedicated HTTPS base URL without query, fragment or credentials.
+4. The plugin forwards return Universal Links through the registered Flutter
+   application and scene delegates. Custom delegates must preserve forwarding
+   to Flutter (`super`) so the plugin receives `continue userActivity` events.
+
+App Switch availability depends on PayPal eligibility and SDK support; enabling
+this flag does not guarantee an app launch. Use an eligible `payNow` checkout;
+the existing `none` (Continue) default is unchanged. Validate on a physical
+device with the PayPal app and a configured merchant return domain. See the
+[Braintree iOS v6 App Switch guide](https://developer.paypal.com/braintree/docs/guides/paypal/app-switch/ios/v6).
+These options affect only `paypalCheckoutPayment`; Vault and Venmo are unchanged.
 
 | OTC error code | Meaning |
 | --- | --- |
