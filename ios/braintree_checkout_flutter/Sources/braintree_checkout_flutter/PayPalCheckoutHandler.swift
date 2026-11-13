@@ -1,4 +1,5 @@
 import Foundation
+import CoreFoundation
 import Flutter
 #if SWIFT_PACKAGE
 import BraintreeCore
@@ -16,14 +17,32 @@ func runOnPayPalMainThread(_ action: @escaping () -> Void) {
 }
 
 final class PayPalCheckoutHandler {
-    private let clientFactory: (String) -> PayPalCheckoutTokenizing?
+    private let clientFactory: (String, URL?) -> PayPalCheckoutTokenizing?
+    private let returnURLHandler: (URL) -> Bool
+    private var activeReturnURL: URL?
     private var activeClient: PayPalCheckoutTokenizing?
     private var activeOperation: UUID?
 
-    init(clientFactory: @escaping (String) -> PayPalCheckoutTokenizing? = {
-        PayPalCheckoutClient(authorization: $0)
-    }) {
+    init(
+        clientFactory: @escaping (String, URL?) -> PayPalCheckoutTokenizing? = {
+            PayPalCheckoutClient(authorization: $0, universalLink: $1)
+        },
+        returnURLHandler: @escaping (URL) -> Bool = {
+            BTAppContextSwitcher.sharedInstance.handleOpen($0)
+        }
+    ) {
         self.clientFactory = clientFactory
+        self.returnURLHandler = returnURLHandler
+    }
+
+    func handleReturnURL(_ url: URL) -> Bool {
+        guard let expected = activeReturnURL,
+              url.scheme?.lowercased() == expected.scheme?.lowercased(),
+              url.host?.lowercased() == expected.host?.lowercased(),
+              (url.port ?? 443) == (expected.port ?? 443),
+              url.user == nil, url.password == nil,
+              [expected.path + "/success", expected.path + "/cancel"].contains(url.path) else { return false }
+        return returnURLHandler(url)
     }
 
     func handle(arguments: Any?, result: @escaping FlutterResult) {
@@ -38,18 +57,45 @@ final class PayPalCheckoutHandler {
         guard let args = arguments as? [String: Any],
               let token = args[Constants.TOKEN_KEY] as? String, !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               let request = Self.makeRequest(args),
-              let client = clientFactory(token) else {
+              let client = clientFactory(token, Self.appSwitchLink(args)) else {
             result(FlutterError(code: "invalid_arguments", message: "Invalid PayPal Checkout request.", details: nil))
             return
         }
 
+        tokenize(request, client: client, arguments: args, token: token,
+                 universalLink: Self.appSwitchLink(args), result: result)
+    }
+
+    private func tokenize(
+        _ request: BTPayPalCheckoutRequest, client: PayPalCheckoutTokenizing,
+        arguments: [String: Any], token: String, universalLink: URL?,
+        result: @escaping FlutterResult
+    ) {
         let operation = UUID()
         activeOperation = operation
         activeClient = client
+        activeReturnURL = universalLink?.appendingPathComponent("braintreeAppSwitchPayPal")
         client.tokenize(request) { [weak self] account, error in
             runOnPayPalMainThread {
                 guard let self, self.activeOperation == operation else { return }
+                if universalLink != nil, let error,
+                   (error as NSError).domain == BTPayPalError.errorDomain,
+                   (error as NSError).code == BTPayPalError.appSwitchFailed.errorCode {
+                    // Only an unsuccessful app launch is safe to retry. Invalidate
+                    // this attempt before starting web checkout, ignoring late callbacks.
+                    self.activeOperation = UUID()
+                    self.activeReturnURL = nil
+                    var webArguments = arguments
+                    webArguments[Constants.ENABLE_PAYPAL_APP_SWITCH_KEY] = false
+                    if let webRequest = Self.makeRequest(webArguments),
+                       let webClient = self.clientFactory(token, nil) {
+                        self.tokenize(webRequest, client: webClient, arguments: webArguments,
+                                      token: token, universalLink: nil, result: result)
+                        return
+                    }
+                }
                 self.activeOperation = nil
+                self.activeReturnURL = nil
                 self.activeClient = nil
                 result(Self.response(account: account, error: error))
             }
@@ -61,6 +107,7 @@ final class PayPalCheckoutHandler {
               matchesEntire("[0-9]{1,7}(\\.[0-9]{2})?", amount),
               let currency = args[Constants.CURRENCY_CODE_KEY] as? String,
               matchesEntire("[A-Z]{3}", currency),
+              validOptionalBoolean(args[Constants.ENABLE_PAYPAL_APP_SWITCH_KEY]),
               validOptionalString(args[Constants.DISPLAY_NAME_KEY]),
               validOptionalString(args[Constants.MERCHANT_ACCOUNT_ID_KEY]) else { return nil }
 
@@ -78,7 +125,11 @@ final class PayPalCheckoutHandler {
         default: return nil
         }
 
+        // 6.30.0 requires the email argument for this initializer; an empty
+        // value is omitted from the SDK payload and preserves existing behavior.
         let request = BTPayPalCheckoutRequest(
+            userAuthenticationEmail: "",
+            enablePayPalAppSwitch: appSwitchLink(args) != nil,
             amount: amount,
             intent: intent,
             userAction: userAction,
@@ -89,6 +140,23 @@ final class PayPalCheckoutHandler {
         request.merchantAccountID = args[Constants.MERCHANT_ACCOUNT_ID_KEY] as? String
         request.isShippingAddressRequired = false
         return request
+    }
+
+    private static func appSwitchLink(_ args: [String: Any]) -> URL? {
+        guard (args[Constants.ENABLE_PAYPAL_APP_SWITCH_KEY] as? Bool ?? true),
+              let value = args[Constants.PAYPAL_UNIVERSAL_LINK_KEY] as? String,
+              !value.contains(where: { $0.isWhitespace }),
+              let url = URL(string: value), url.scheme?.lowercased() == "https",
+              let host = url.host, !host.isEmpty,
+              url.user == nil, url.password == nil,
+              url.query == nil, url.fragment == nil else { return nil }
+        return url
+    }
+
+    private static func validOptionalBoolean(_ value: Any?) -> Bool {
+        guard let value else { return true }
+        guard let number = value as? NSNumber else { return false }
+        return CFGetTypeID(number) == CFBooleanGetTypeID()
     }
 
     private static func matchesEntire(_ pattern: String, _ value: String) -> Bool {

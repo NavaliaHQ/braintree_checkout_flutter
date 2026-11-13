@@ -15,6 +15,10 @@ final class PayPalFlowCoordinator {
         self.vaultHandler = vaultHandler
     }
 
+    func handleCheckoutReturnURL(_ url: URL) -> Bool {
+        checkoutHandler.handleReturnURL(url)
+    }
+
     func handleCheckout(arguments: Any?, result: @escaping FlutterResult) {
         runOnPayPalMainThread {
             self.start(result: result) { completion in

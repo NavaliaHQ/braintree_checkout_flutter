@@ -163,6 +163,10 @@ extension BraintreeCheckoutFlutterPlugin {
             return false
         }
 
+        if paypalFlowCoordinator.handleCheckoutReturnURL(url) {
+            return true
+        }
+
         if isBraintreeUniversalLink(url: url) {
             BTAppContextSwitcher.sharedInstance.handleOpen(url)
             return true
@@ -178,6 +182,10 @@ extension BraintreeCheckoutFlutterPlugin {
         guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,
               let url = userActivity.webpageURL else {
             return false
+        }
+
+        if paypalFlowCoordinator.handleCheckoutReturnURL(url) {
+            return true
         }
 
         if isBraintreeUniversalLink(url: url) {

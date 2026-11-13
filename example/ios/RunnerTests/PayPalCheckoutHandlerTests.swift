@@ -8,10 +8,12 @@ import Braintree
 @testable import braintree_checkout_flutter
 
 final class CheckoutClientFake: PayPalCheckoutTokenizing {
+    var requests: [BTPayPalCheckoutRequest] = []
     var request: BTPayPalCheckoutRequest?
     var completion: ((PayPalCheckoutAccount?, Error?) -> Void)?
 
     func tokenize(_ request: BTPayPalCheckoutRequest, completion: @escaping (PayPalCheckoutAccount?, Error?) -> Void) {
+        requests.append(request)
         self.request = request
         self.completion = completion
     }
@@ -32,9 +34,141 @@ private enum CheckoutFactory {
 
 @MainActor
 final class PayPalCheckoutHandlerTests: XCTestCase {
+    func testShouldFallbackOnceAfterAppLaunchFailureAndIgnoreStaleCallback() {
+        let client = CheckoutClientFake()
+        let handler = PayPalCheckoutHandler(clientFactory: { _, _ in client })
+        var responses: [Any?] = []
+        handler.handle(arguments: CheckoutFactory.arguments([
+            "universalLink": "https://merchant.example/paypal", "userAction": "payNow"
+        ])) { responses.append($0) }
+        let appCompletion = client.completion
+        appCompletion?(nil, BTPayPalError.appSwitchFailed)
+        XCTAssertEqual(client.requests.count, 2)
+        XCTAssertTrue(responses.isEmpty)
+        appCompletion?(CheckoutFactory.account(), nil)
+        XCTAssertTrue(responses.isEmpty)
+        client.completion?(CheckoutFactory.account(), nil)
+        client.completion?(CheckoutFactory.account(), nil)
+        XCTAssertEqual(responses.count, 1)
+        XCTAssertTrue(responses.first is String)
+    }
+
+    func testShouldOnlyConfigureAppSwitchWhenEnabledWithUsableLink() {
+        let cases: [([String: Any], String?)] = [
+            (["universalLink": "https://merchant.example/paypal"], "https://merchant.example/paypal"),
+            (["universalLink": "https://merchant.example/paypal", "enablePayPalAppSwitch": true], "https://merchant.example/paypal"),
+            (["universalLink": "https://merchant.example/paypal", "enablePayPalAppSwitch": false], nil),
+            ([:], nil), (["universalLink": ""], nil),
+            (["universalLink": "http://merchant.example/paypal"], nil),
+            (["universalLink": "https://merchant.example/paypal?query=1"], nil),
+            (["universalLink": "https://user@merchant.example/paypal"], nil),
+            (["universalLink": "https://merchant.example/paypal#fragment"], nil)
+        ]
+        for (options, expected) in cases {
+            let client = CheckoutClientFake()
+            var links: [URL?] = []
+            let handler = PayPalCheckoutHandler(clientFactory: { _, url in
+                links.append(url)
+                return client
+            })
+            handler.handle(arguments: CheckoutFactory.arguments(options)) { _ in }
+            XCTAssertEqual(links.count, 1)
+            XCTAssertEqual(links[0]?.absoluteString, expected)
+            client.completion?(nil, BTPayPalError.canceled)
+        }
+    }
+
+    func testShouldNotRetryCancellationOrOtherErrorsWithAppSwitchEnabled() {
+        for error: Error in [BTPayPalError.canceled, BTPayPalError.failedToCreateNonce,
+                             NSError(domain: "other", code: BTPayPalError.appSwitchFailed.errorCode)] {
+            let client = CheckoutClientFake()
+            let handler = PayPalCheckoutHandler(clientFactory: { _, _ in client })
+            var responses = 0
+            handler.handle(arguments: CheckoutFactory.arguments([
+                "universalLink": "https://merchant.example/paypal"
+            ])) { _ in responses += 1 }
+            client.completion?(nil, error)
+            XCTAssertEqual(client.requests.count, 1)
+            XCTAssertEqual(responses, 1)
+        }
+    }
+
+    func testShouldNotRetryWebAttemptAndShouldReleaseBusyState() {
+        let client = CheckoutClientFake()
+        var links: [URL?] = []
+        let handler = PayPalCheckoutHandler(clientFactory: { _, url in
+            links.append(url)
+            return client
+        })
+        var responses: [Any?] = []
+        handler.handle(arguments: CheckoutFactory.arguments([
+            "universalLink": "https://merchant.example/paypal", "paymentIntent": "sale",
+            "userAction": "payNow", "displayName": "Store", "merchantAccountId": "merchant"
+        ])) { responses.append($0) }
+        client.completion?(nil, BTPayPalError.appSwitchFailed as NSError)
+        XCTAssertEqual(links.count, 2)
+        XCTAssertNotNil(links[0])
+        XCTAssertNil(links[1])
+        XCTAssertEqual(client.request?.amount, "29.90")
+        XCTAssertEqual(client.request?.intent, .sale)
+        XCTAssertEqual(client.request?.userAction, .payNow)
+        XCTAssertEqual(client.request?.displayName, "Store")
+        XCTAssertEqual(client.request?.merchantAccountID, "merchant")
+        var busy: Any?
+        handler.handle(arguments: CheckoutFactory.arguments()) { busy = $0 }
+        XCTAssertEqual((busy as? FlutterError)?.code, "payment_in_progress")
+        client.completion?(nil, BTPayPalError.appSwitchFailed)
+        XCTAssertEqual(client.requests.count, 2)
+        XCTAssertEqual(responses.count, 1)
+        XCTAssertEqual((responses[0] as? FlutterError)?.code, "error")
+        handler.handle(arguments: CheckoutFactory.arguments()) { _ in }
+        XCTAssertEqual(client.requests.count, 3)
+        client.completion?(nil, BTPayPalError.canceled)
+    }
+
+    func testShouldNotRetryWhenDisabledOrWithoutReturnLink() {
+        for options: [String: Any] in [[:], ["enablePayPalAppSwitch": false,
+                                      "universalLink": "https://merchant.example/paypal"]] {
+            let client = CheckoutClientFake()
+            let handler = PayPalCheckoutHandler(clientFactory: { _, _ in client })
+            var responses = 0
+            handler.handle(arguments: CheckoutFactory.arguments(options)) { _ in responses += 1 }
+            client.completion?(nil, BTPayPalError.appSwitchFailed)
+            XCTAssertEqual(client.requests.count, 1)
+            XCTAssertEqual(responses, 1)
+        }
+    }
+
+    func testShouldOnlyRouteActiveCheckoutReturnLinksAndClearOnFallback() {
+        let client = CheckoutClientFake()
+        var routed: [URL] = []
+        let handler = PayPalCheckoutHandler(clientFactory: { _, _ in client }, returnURLHandler: {
+            routed.append($0)
+            return true
+        })
+        let valid = URL(string: "https://merchant.example/paypal/braintreeAppSwitchPayPal/success?token=test")!
+        XCTAssertFalse(handler.handleReturnURL(valid))
+        handler.handle(arguments: CheckoutFactory.arguments([
+            "universalLink": "https://merchant.example/paypal"
+        ])) { _ in }
+        for invalid in ["https://other.example/paypal/braintreeAppSwitchPayPal/success",
+                        "https://merchant.example/paypal-other/braintreeAppSwitchPayPal/success",
+                        "https://merchant.example/paypal/braintreeAppSwitchVenmo/success",
+                        "http://merchant.example/paypal/braintreeAppSwitchPayPal/success",
+                        "https://merchant.example:444/paypal/braintreeAppSwitchPayPal/success"] {
+            XCTAssertFalse(handler.handleReturnURL(URL(string: invalid)!))
+        }
+        XCTAssertTrue(handler.handleReturnURL(valid))
+        XCTAssertEqual(routed, [valid])
+        client.completion?(nil, BTPayPalError.appSwitchFailed)
+        XCTAssertFalse(handler.handleReturnURL(valid))
+        client.completion?(CheckoutFactory.account(), nil)
+        XCTAssertFalse(handler.handleReturnURL(valid))
+    }
+
     func testShouldBuildCheckoutWhenOptionsAreProvided() {
         let checkoutClient = CheckoutClientFake()
-        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _ in checkoutClient })
+        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _, _ in checkoutClient })
         checkoutHandler.handle(arguments: CheckoutFactory.arguments([
             "paymentIntent": "sale", "userAction": "payNow", "displayName": "Store", "merchantAccountId": "merchant"
         ])) { _ in }
@@ -52,7 +186,7 @@ final class PayPalCheckoutHandlerTests: XCTestCase {
     func testShouldMapDefaultsAndOrderWhenRequested() {
         for intent in ["authorize", "order"] {
             let checkoutClient = CheckoutClientFake()
-            let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _ in checkoutClient })
+            let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _, _ in checkoutClient })
             checkoutHandler.handle(arguments: CheckoutFactory.arguments(["paymentIntent": intent])) { _ in }
             XCTAssertEqual(checkoutClient.request?.intent, intent == "order" ? .order : .authorize)
             XCTAssertEqual(checkoutClient.request?.userAction, BTPayPalRequestUserAction.none)
@@ -75,11 +209,13 @@ final class PayPalCheckoutHandlerTests: XCTestCase {
             CheckoutFactory.arguments(["displayName": " "]),
             CheckoutFactory.arguments(["merchantAccountId": false]),
             CheckoutFactory.arguments(["paymentIntent": "unknown"]),
-            CheckoutFactory.arguments(["userAction": 1])]
+            CheckoutFactory.arguments(["userAction": 1]),
+            CheckoutFactory.arguments(["enablePayPalAppSwitch": "true"]),
+            CheckoutFactory.arguments(["enablePayPalAppSwitch": 1])]
         for arguments in invalidArguments {
             var clientCreations = 0
             var responses: [Any?] = []
-            let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _ in
+            let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _, _ in
                 clientCreations += 1
                 return CheckoutClientFake()
             })
@@ -93,7 +229,7 @@ final class PayPalCheckoutHandlerTests: XCTestCase {
     func testShouldAcceptAmountBoundariesWithoutCoercion() {
         for amount in ["0", "0.00", "10", "10.00", "9999999.99"] {
             let checkoutClient = CheckoutClientFake()
-            let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _ in checkoutClient })
+            let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _, _ in checkoutClient })
             checkoutHandler.handle(arguments: CheckoutFactory.arguments(["amount": amount])) { _ in }
             XCTAssertEqual(checkoutClient.request?.amount, amount)
             checkoutClient.completion?(CheckoutFactory.account(), nil)
@@ -101,7 +237,7 @@ final class PayPalCheckoutHandlerTests: XCTestCase {
     }
 
     func testShouldReturnErrorWhenAuthorizationCannotCreateClient() {
-        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _ in nil })
+        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _, _ in nil })
         var checkoutResponse: Any?
         checkoutHandler.handle(arguments: CheckoutFactory.arguments()) { checkoutResponse = $0 }
         XCTAssertEqual((checkoutResponse as? FlutterError)?.code, "invalid_arguments")
@@ -109,7 +245,7 @@ final class PayPalCheckoutHandlerTests: XCTestCase {
 
     func testShouldSerializeNullableAccountWithoutInventingAddress() throws {
         let checkoutClient = CheckoutClientFake()
-        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _ in checkoutClient })
+        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _, _ in checkoutClient })
         var checkoutResponse: Any?
         checkoutHandler.handle(arguments: CheckoutFactory.arguments()) { checkoutResponse = $0 }
         checkoutClient.completion?(CheckoutFactory.account(), nil)
@@ -131,7 +267,7 @@ final class PayPalCheckoutHandlerTests: XCTestCase {
         ]
         for (error, expectedCode) in cases {
             let checkoutClient = CheckoutClientFake()
-            let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _ in checkoutClient })
+            let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _, _ in checkoutClient })
             var checkoutResponse: Any?
             checkoutHandler.handle(arguments: CheckoutFactory.arguments()) { checkoutResponse = $0 }
             checkoutClient.completion?(nil, error)
@@ -142,7 +278,7 @@ final class PayPalCheckoutHandlerTests: XCTestCase {
 
     func testShouldRejectEmptyNonce() {
         let checkoutClient = CheckoutClientFake()
-        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _ in checkoutClient })
+        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _, _ in checkoutClient })
         var checkoutResponse: Any?
         checkoutHandler.handle(arguments: CheckoutFactory.arguments()) { checkoutResponse = $0 }
         checkoutClient.completion?(CheckoutFactory.account(nonce: " "), nil)
@@ -151,7 +287,7 @@ final class PayPalCheckoutHandlerTests: XCTestCase {
 
     func testShouldIgnoreDuplicateAndStaleCallbacksAndAllowRetry() {
         let checkoutClient = CheckoutClientFake()
-        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _ in checkoutClient })
+        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _, _ in checkoutClient })
         var firstResponses = 0
         var secondResponses = 0
         var busyResponse: Any?
@@ -171,7 +307,7 @@ final class PayPalCheckoutHandlerTests: XCTestCase {
 
     func testShouldRetainClientUntilOperationFinishes() {
         weak var retainedClient: CheckoutClientFake?
-        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _ in
+        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _, _ in
             let checkoutClient = CheckoutClientFake()
             retainedClient = checkoutClient
             return checkoutClient
@@ -185,7 +321,7 @@ final class PayPalCheckoutHandlerTests: XCTestCase {
 
     func testShouldDeliverBackgroundCallbackOnMainThread() async {
         let checkoutClient = CheckoutClientFake()
-        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _ in checkoutClient })
+        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _, _ in checkoutClient })
         let responseExpectation = expectation(description: "main thread response")
         checkoutHandler.handle(arguments: CheckoutFactory.arguments()) { _ in
             XCTAssertTrue(Thread.isMainThread)
@@ -198,7 +334,7 @@ final class PayPalCheckoutHandlerTests: XCTestCase {
 
     func testShouldExcludeVaultAndCheckoutInBothDirections() {
         let checkoutClient = CheckoutClientFake()
-        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _ in checkoutClient })
+        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _, _ in checkoutClient })
         var vaultCompletion: FlutterResult?
         let coordinator = PayPalFlowCoordinator(checkoutHandler: checkoutHandler, vaultHandler: { _, completion in
             vaultCompletion = completion
@@ -239,7 +375,7 @@ final class PayPalCheckoutHandlerTests: XCTestCase {
 
     func testShouldNotBlockCheckoutAfterMalformedVaultArguments() {
         let checkoutClient = CheckoutClientFake()
-        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _ in checkoutClient })
+        let checkoutHandler = PayPalCheckoutHandler(clientFactory: { _, _ in checkoutClient })
         let coordinator = PayPalFlowCoordinator(checkoutHandler: checkoutHandler, vaultHandler: { _, _ in XCTFail() })
         var vaultResponse: Any?
         coordinator.handleVault(arguments: nil) { vaultResponse = $0 }

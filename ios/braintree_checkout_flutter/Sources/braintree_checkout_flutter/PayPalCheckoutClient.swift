@@ -28,9 +28,13 @@ protocol PayPalCheckoutTokenizing: AnyObject {
 final class PayPalCheckoutClient: PayPalCheckoutTokenizing {
     private let client: BTPayPalClient
 
-    init?(authorization: String) {
+    init?(authorization: String, universalLink: URL? = nil) {
         guard let apiClient = BTAPIClient(authorization: authorization) else { return nil }
-        client = BTPayPalClient(apiClient: apiClient)
+        if let universalLink {
+            client = BTPayPalClient(apiClient: apiClient, universalLink: universalLink)
+        } else {
+            client = BTPayPalClient(apiClient: apiClient)
+        }
     }
 
     func tokenize(

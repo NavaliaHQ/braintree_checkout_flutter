@@ -4,6 +4,8 @@ public struct Constants {
     static let DATA_INFO_METHOD_KEY = "getData"
     static let VENMO_PAYMENT_METHOD_KEY = "venmoPayment"
     static let PAYPAL_CHECKOUT_PAYMENT_METHOD_KEY = "paypalCheckoutPayment"
+    static let ENABLE_PAYPAL_APP_SWITCH_KEY = "enablePayPalAppSwitch"
+    static let PAYPAL_UNIVERSAL_LINK_KEY = "universalLink"
     static let MERCHANT_ACCOUNT_ID_KEY = "merchantAccountId"
     static let PAYPAL_PAYMENT_METHOD_KEY = "paypalPayment"
     static let IS_VENMO_APP_INSTALLED = "isVenmoAppInstalled"
