@@ -4,6 +4,22 @@ import 'package:flutter_test/flutter_test.dart';
 import '../factories/paypal_checkout_request_factory.dart';
 
 void main() {
+  test('should serialize disabled App Switch and its return link', () {
+    const request = PayPalCheckoutRequest(
+      token: 'client-token',
+      amount: '29.90',
+      currencyCode: 'USD',
+      enablePayPalAppSwitch: false,
+      universalLink: 'https://merchant.example/paypal',
+    );
+    expect(request.toJson()['enablePayPalAppSwitch'], false);
+    expect(
+      request.toJson()['universalLink'],
+      'https://merchant.example/paypal',
+    );
+    expect(request.validate, returnsNormally);
+  });
+
   test('should serialize defaults when optional fields are absent', () {
     final checkoutRequest = PayPalCheckoutRequestFactory.create();
     expect(checkoutRequest.intent, PayPalCheckoutIntent.authorize);
@@ -14,6 +30,7 @@ void main() {
       'currencyCode': 'USD',
       'paymentIntent': 'authorize',
       'userAction': 'none',
+      'enablePayPalAppSwitch': true,
     });
   });
 
@@ -32,6 +49,7 @@ void main() {
       'merchantAccountId': 'merchant',
       'paymentIntent': 'sale',
       'userAction': 'payNow',
+      'enablePayPalAppSwitch': true,
     });
     expect(
       PayPalCheckoutRequestFactory.create(

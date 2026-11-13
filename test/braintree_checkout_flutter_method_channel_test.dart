@@ -27,6 +27,28 @@ void main() {
     expect(checkoutNonce?.nonce, 'test-nonce');
     expect(calls.single.method, 'paypalCheckoutPayment');
     expect(calls.single.arguments, checkoutRequest.toJson());
+    expect((calls.single.arguments as Map)['enablePayPalAppSwitch'], true);
+  });
+
+  test('should forward disabled App Switch and return link on iOS', () async {
+    final checkoutChannel = MethodChannelBraintreeCheckoutFlutter();
+    usePlatform(TargetPlatform.iOS);
+    MethodCall? captured;
+    mockChannel(checkoutChannel, (call) async {
+      captured = call;
+      return jsonEncode(PayPalAccountNonceFactory.json());
+    });
+    await checkoutChannel.paypalCheckoutPayment(
+      PayPalCheckoutRequestFactory.create(
+        enablePayPalAppSwitch: false,
+        universalLink: 'https://merchant.example/paypal',
+      ),
+    );
+    expect((captured!.arguments as Map)['enablePayPalAppSwitch'], false);
+    expect(
+      (captured!.arguments as Map)['universalLink'],
+      'https://merchant.example/paypal',
+    );
   });
 
   test('should avoid native invocation when platform is unsupported', () async {

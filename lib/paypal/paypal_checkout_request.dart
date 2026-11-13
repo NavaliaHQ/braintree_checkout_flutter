@@ -10,6 +10,8 @@ class PayPalCheckoutRequest {
     required this.token,
     required this.amount,
     required this.currencyCode,
+    this.enablePayPalAppSwitch = true,
+    this.universalLink,
     this.displayName,
     this.merchantAccountId,
     this.intent = PayPalCheckoutIntent.authorize,
@@ -17,6 +19,14 @@ class PayPalCheckoutRequest {
   });
 
   final String token;
+
+  /// Attempts PayPal App Switch on iOS when configured and available.
+  /// Otherwise uses the existing web authentication session.
+  final bool enablePayPalAppSwitch;
+
+  /// HTTPS return link configured with Associated Domains and Braintree.
+  /// Missing or unusable links fall back to web authentication.
+  final String? universalLink;
 
   /// Decimal amount, with up to seven integer digits and zero or two decimals.
   final String amount;
@@ -55,6 +65,8 @@ class PayPalCheckoutRequest {
 
   Map<String, dynamic> toJson() => {
     'token': token,
+    'enablePayPalAppSwitch': enablePayPalAppSwitch,
+    if (universalLink != null) 'universalLink': universalLink,
     'amount': amount,
     'currencyCode': currencyCode,
     if (displayName != null) 'displayName': displayName,
