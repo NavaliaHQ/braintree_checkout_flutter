@@ -143,7 +143,15 @@ setup below. For example, add these options to the request above:
 ```dart
 enablePayPalAppSwitch: true,
 universalLink: 'https://your-domain.example/paypal-return',
+userAuthenticationEmail: 'buyer@example.com',
 ```
+
+Supply the buyer's real `userAuthenticationEmail` for the App Switch integration
+documented by SDK 6.30.0. The field remains optional for compatibility with existing
+checkout calls and is omitted from the payload when absent; omission does not
+guarantee App Switch eligibility. If supplied, it must not be blank. The value is
+forwarded unchanged, including on the web fallback; email syntax and account
+eligibility are left to Braintree.
 
 The SDK determines whether the PayPal app is installed and the buyer/merchant
 is eligible. If unavailable, the existing `ASWebAuthenticationSession` web
