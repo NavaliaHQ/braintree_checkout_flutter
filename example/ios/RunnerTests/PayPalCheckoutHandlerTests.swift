@@ -39,11 +39,14 @@ final class PayPalCheckoutHandlerTests: XCTestCase {
         let handler = PayPalCheckoutHandler(clientFactory: { _, _ in client })
         var responses: [Any?] = []
         handler.handle(arguments: CheckoutFactory.arguments([
-            "universalLink": "https://merchant.example/paypal", "userAction": "payNow"
+            "universalLink": "https://merchant.example/paypal", "userAction": "payNow",
+            "userAuthenticationEmail": "buyer@example.com"
         ])) { responses.append($0) }
+        XCTAssertEqual(client.request?.userAuthenticationEmail, "buyer@example.com")
         let appCompletion = client.completion
         appCompletion?(nil, BTPayPalError.appSwitchFailed)
         XCTAssertEqual(client.requests.count, 2)
+        XCTAssertEqual(client.request?.userAuthenticationEmail, "buyer@example.com")
         XCTAssertTrue(responses.isEmpty)
         appCompletion?(CheckoutFactory.account(), nil)
         XCTAssertTrue(responses.isEmpty)
@@ -198,6 +201,9 @@ final class PayPalCheckoutHandlerTests: XCTestCase {
         let invalidArguments: [Any?] = [nil, "wrong", [:],
             CheckoutFactory.arguments(["token": " "]),
             CheckoutFactory.arguments(["token": 42]),
+            CheckoutFactory.arguments(["userAuthenticationEmail": ""]),
+            CheckoutFactory.arguments(["userAuthenticationEmail": "  "]),
+            CheckoutFactory.arguments(["userAuthenticationEmail": 42]),
             CheckoutFactory.arguments(["amount": 29.90]),
             CheckoutFactory.arguments(["amount": "-1"]),
             CheckoutFactory.arguments(["amount": "1.0"]),

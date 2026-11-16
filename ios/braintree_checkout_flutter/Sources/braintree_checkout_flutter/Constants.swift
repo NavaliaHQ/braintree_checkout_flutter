@@ -6,6 +6,7 @@ public struct Constants {
     static let PAYPAL_CHECKOUT_PAYMENT_METHOD_KEY = "paypalCheckoutPayment"
     static let ENABLE_PAYPAL_APP_SWITCH_KEY = "enablePayPalAppSwitch"
     static let PAYPAL_UNIVERSAL_LINK_KEY = "universalLink"
+    static let USER_AUTHENTICATION_EMAIL_KEY = "userAuthenticationEmail"
     static let MERCHANT_ACCOUNT_ID_KEY = "merchantAccountId"
     static let PAYPAL_PAYMENT_METHOD_KEY = "paypalPayment"
     static let IS_VENMO_APP_INSTALLED = "isVenmoAppInstalled"

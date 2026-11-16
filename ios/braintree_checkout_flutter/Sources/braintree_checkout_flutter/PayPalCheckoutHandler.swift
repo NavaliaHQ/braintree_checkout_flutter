@@ -109,6 +109,7 @@ final class PayPalCheckoutHandler {
               matchesEntire("[A-Z]{3}", currency),
               validOptionalBoolean(args[Constants.ENABLE_PAYPAL_APP_SWITCH_KEY]),
               validOptionalString(args[Constants.DISPLAY_NAME_KEY]),
+              validOptionalString(args[Constants.USER_AUTHENTICATION_EMAIL_KEY]),
               validOptionalString(args[Constants.MERCHANT_ACCOUNT_ID_KEY]) else { return nil }
 
         let intent: BTPayPalRequestIntent
@@ -125,10 +126,11 @@ final class PayPalCheckoutHandler {
         default: return nil
         }
 
-        // 6.30.0 requires the email argument for this initializer; an empty
-        // value is omitted from the SDK payload and preserves existing behavior.
+        // SDK 6.30.0 requires a String for this initializer. When omitted by
+        // legacy callers, the empty value is excluded from the SDK payload;
+        // this does not guarantee eligibility for App Switch.
         let request = BTPayPalCheckoutRequest(
-            userAuthenticationEmail: "",
+            userAuthenticationEmail: args[Constants.USER_AUTHENTICATION_EMAIL_KEY] as? String ?? "",
             enablePayPalAppSwitch: appSwitchLink(args) != nil,
             amount: amount,
             intent: intent,
