@@ -14,7 +14,9 @@ void main() {
 
   test('should send checkout payload when platform is iOS', () async {
     final checkoutChannel = MethodChannelBraintreeCheckoutFlutter();
-    final checkoutRequest = PayPalCheckoutRequestFactory.create();
+    final checkoutRequest = PayPalCheckoutRequestFactory.create(
+      userAuthenticationEmail: 'buyer@example.com',
+    );
     final calls = <MethodCall>[];
     usePlatform(TargetPlatform.iOS);
     mockChannel(checkoutChannel, (call) async {
@@ -26,6 +28,10 @@ void main() {
     );
     expect(checkoutNonce?.nonce, 'test-nonce');
     expect(calls.single.method, 'paypalCheckoutPayment');
+    expect(
+      (calls.single.arguments as Map)['userAuthenticationEmail'],
+      'buyer@example.com',
+    );
     expect(calls.single.arguments, checkoutRequest.toJson());
     expect((calls.single.arguments as Map)['enablePayPalAppSwitch'], true);
   });

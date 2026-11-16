@@ -111,6 +111,8 @@ void main() {
       PayPalCheckoutRequestFactory.create(token: ' \n'),
       PayPalCheckoutRequestFactory.create(displayName: ' '),
       PayPalCheckoutRequestFactory.create(merchantAccountId: ''),
+      PayPalCheckoutRequestFactory.create(userAuthenticationEmail: ''),
+      PayPalCheckoutRequestFactory.create(userAuthenticationEmail: '  '),
     ]) {
       expect(checkoutRequest.validate, throwsArgumentError);
     }

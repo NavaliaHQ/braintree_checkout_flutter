@@ -12,6 +12,7 @@ class PayPalCheckoutRequest {
     required this.currencyCode,
     this.enablePayPalAppSwitch = true,
     this.universalLink,
+    this.userAuthenticationEmail,
     this.displayName,
     this.merchantAccountId,
     this.intent = PayPalCheckoutIntent.authorize,
@@ -27,6 +28,12 @@ class PayPalCheckoutRequest {
   /// HTTPS return link configured with Associated Domains and Braintree.
   /// Missing or unusable links fall back to web authentication.
   final String? universalLink;
+
+  /// Buyer email forwarded to Braintree for authentication.
+  /// Supply it for the App Switch integration documented by SDK 6.30.0.
+  /// Optional for compatibility with existing checkout calls; must not be blank.
+  /// Omitting it does not guarantee App Switch eligibility.
+  final String? userAuthenticationEmail;
 
   /// Decimal amount, with up to seven integer digits and zero or two decimals.
   final String amount;
@@ -50,6 +57,10 @@ class PayPalCheckoutRequest {
     if (!_matchesEntire(RegExp(r'[A-Z]{3}'), currencyCode)) {
       throw ArgumentError('currencyCode must contain three uppercase letters');
     }
+    if (userAuthenticationEmail != null &&
+        userAuthenticationEmail!.trim().isEmpty) {
+      throw ArgumentError('userAuthenticationEmail must not be blank');
+    }
     if (displayName != null && displayName!.trim().isEmpty) {
       throw ArgumentError('displayName must not be blank');
     }
@@ -67,6 +78,8 @@ class PayPalCheckoutRequest {
     'token': token,
     'enablePayPalAppSwitch': enablePayPalAppSwitch,
     if (universalLink != null) 'universalLink': universalLink,
+    if (userAuthenticationEmail != null)
+      'userAuthenticationEmail': userAuthenticationEmail,
     'amount': amount,
     'currencyCode': currencyCode,
     if (displayName != null) 'displayName': displayName,
