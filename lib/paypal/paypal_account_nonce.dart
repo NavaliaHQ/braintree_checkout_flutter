@@ -26,7 +26,7 @@ class PayPalAccountNonce {
         lastName: json['lastName'] as String?,
         phone: json['phone'] as String?,
         email: json['email'] as String?,
-        payerId: json['payerId'] as String,
+        payerId: json['payerId'] as String?,
         authenticateUrl: json['authenticateUrl'] as String?,
       );
 

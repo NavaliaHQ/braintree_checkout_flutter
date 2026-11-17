@@ -1,4 +1,10 @@
+import Foundation
+#if SWIFT_PACKAGE
+import BraintreeCore
+import BraintreePayPal
+#else
 import Braintree
+#endif
 import Flutter
 
 class PayPalHandler {

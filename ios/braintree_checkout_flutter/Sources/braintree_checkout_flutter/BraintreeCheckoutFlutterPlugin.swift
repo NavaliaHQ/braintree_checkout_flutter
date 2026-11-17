@@ -1,8 +1,16 @@
+import Foundation
 import Flutter
 import UIKit
+#if SWIFT_PACKAGE
+import BraintreeCore
+import BraintreeCard
+import BraintreeDataCollector
+#else
 import Braintree
+#endif
 
 public class BraintreeCheckoutFlutterPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDelegate {
+    private let paypalFlowCoordinator = PayPalFlowCoordinator()
     private var flutterResult: FlutterResult?
     var universalLinkURL: URL?
     
@@ -30,7 +38,10 @@ public class BraintreeCheckoutFlutterPlugin: NSObject, FlutterPlugin, FlutterSce
             }
 
         case Constants.PAYPAL_PAYMENT_METHOD_KEY:
-            PayPalHandler.handle(arguments: call.arguments, result: result)
+            paypalFlowCoordinator.handleVault(arguments: call.arguments, result: result)
+
+        case Constants.PAYPAL_CHECKOUT_PAYMENT_METHOD_KEY:
+            paypalFlowCoordinator.handleCheckout(arguments: call.arguments, result: result)
 
         case Constants.VENMO_PAYMENT_METHOD_KEY:
             VenmoHandler.handle(arguments: call.arguments, result: result)
@@ -152,6 +163,10 @@ extension BraintreeCheckoutFlutterPlugin {
             return false
         }
 
+        if paypalFlowCoordinator.handleCheckoutReturnURL(url) {
+            return true
+        }
+
         if isBraintreeUniversalLink(url: url) {
             BTAppContextSwitcher.sharedInstance.handleOpen(url)
             return true
@@ -167,6 +182,10 @@ extension BraintreeCheckoutFlutterPlugin {
         guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,
               let url = userActivity.webpageURL else {
             return false
+        }
+
+        if paypalFlowCoordinator.handleCheckoutReturnURL(url) {
+            return true
         }
 
         if isBraintreeUniversalLink(url: url) {

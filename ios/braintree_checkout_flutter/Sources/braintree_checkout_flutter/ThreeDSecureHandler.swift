@@ -1,4 +1,11 @@
+import Foundation
+#if SWIFT_PACKAGE
+import BraintreeCore
+import BraintreeCard
+import BraintreeThreeDSecure
+#else
 import Braintree
+#endif
 import Flutter
 
 class ThreeDSecureHandler {

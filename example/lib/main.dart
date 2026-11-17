@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:braintree_checkout_flutter/braintree_checkout_flutter.dart';
 
 void main() {
@@ -28,26 +30,51 @@ class CheckoutPage extends StatefulWidget {
 class _CheckoutPageState extends State<CheckoutPage> {
   final BraintreeCheckoutFlutter _braintree = BraintreeCheckoutFlutter();
   String _output = 'Result will appear here...';
+  bool _isPayPalInProgress = false;
 
   static const _clientToken = 'YOUR_CLIENT_TOKEN_FROM_SERVER';
 
-  void _startPayPalFlow() async {
-    final result = await _braintree.paypalPayment(
-      PayPalRequest(
-        token: _clientToken,
-        amount: '12.34',
-        currencyCode: 'USD',
-        displayName: 'Your Store',
-        androidAppLinkReturnUrl: 'packageInfo.packageName',
-        androidDeepLinkFallbackUrlScheme: 'packageInfo.packageName',
-      ),
-    );
-
-    setState(() {
-      _output = result == null
-          ? 'PayPal flow canceled.'
-          : 'PayPal nonce: ${result.nonce}';
-    });
+  Future<void> _startPayPalFlow({required bool oneTimeCheckout}) async {
+    if (_isPayPalInProgress) return;
+    setState(() => _isPayPalInProgress = true);
+    try {
+      final nonce = oneTimeCheckout
+          ? await _braintree.paypalCheckoutPayment(
+              const PayPalCheckoutRequest(
+                token: _clientToken,
+                amount: '12.34',
+                currencyCode: 'USD',
+                displayName: 'Your Store',
+                intent: PayPalCheckoutIntent.sale,
+                userAction: PayPalCheckoutUserAction.payNow,
+              ),
+            )
+          : await _braintree.paypalVaultPayment(
+              const PayPalRequest(
+                token: _clientToken,
+                amount: '12.34',
+                currencyCode: 'USD',
+                displayName: 'Your Store',
+                androidAppLinkReturnUrl: 'https://your-company.com/payments',
+                androidDeepLinkFallbackUrlScheme: 'your.app.payments',
+              ),
+            );
+      if (!mounted) return;
+      setState(() {
+        _output = nonce == null
+            ? 'No PayPal authorization returned.'
+            : 'PayPal authorized. Send the nonce to your server to process payment.';
+      });
+    } on PlatformException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _output = error.code == 'canceled'
+            ? 'PayPal approval canceled.'
+            : 'PayPal could not complete (${error.code}).';
+      });
+    } finally {
+      if (mounted) setState(() => _isPayPalInProgress = false);
+    }
   }
 
   void _startVenmoFlow() async {
@@ -93,17 +120,29 @@ class _CheckoutPageState extends State<CheckoutPage> {
         child: Column(
           children: [
             ElevatedButton(
-              onPressed: _startPayPalFlow,
-              child: const Text('Pay with PayPal'),
+              onPressed: _isPayPalInProgress
+                  ? null
+                  : () => _startPayPalFlow(oneTimeCheckout: false),
+              child: const Text('PayPal Vault'),
             ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: _startVenmoFlow,
+              onPressed:
+                  !_isPayPalInProgress &&
+                      !kIsWeb &&
+                      defaultTargetPlatform == TargetPlatform.iOS
+                  ? () => _startPayPalFlow(oneTimeCheckout: true)
+                  : null,
+              child: const Text('PayPal One-Time Checkout (iOS)'),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _isPayPalInProgress ? null : _startVenmoFlow,
               child: const Text('Pay with Venmo'),
             ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: _collectDeviceData,
+              onPressed: _isPayPalInProgress ? null : _collectDeviceData,
               child: const Text('Collect Device Data'),
             ),
             const SizedBox(height: 24),
